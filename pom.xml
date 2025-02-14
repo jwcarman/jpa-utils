@@ -32,6 +32,9 @@
         <sonatype.plugin.version>0.6.0</sonatype.plugin.version>
         <source.plugin.version>3.3.1</source.plugin.version>
         <surefire.plugin.version>3.5.2</surefire.plugin.version>
+
+        <sonar.organization>jwcarman</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <url>https://github.com/jwcarman/jpa-utils</url>

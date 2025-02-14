@@ -20,4 +20,4 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Build with Maven
-      run: mvn -Pci -B verify
+      run: mvn -Pci -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=jwcarman_jpa-utils
