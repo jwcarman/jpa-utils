@@ -106,7 +106,7 @@ public abstract class BaseEntity {
      *
      * @return the entity's UUID, guaranteed to be non-null
      */
-    public final UUID getId() {
+    public UUID getId() {
         return id;
     }
 

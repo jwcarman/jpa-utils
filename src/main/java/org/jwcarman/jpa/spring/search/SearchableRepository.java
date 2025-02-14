@@ -5,6 +5,7 @@ import org.jwcarman.jpa.spring.page.SortProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.repository.NoRepositoryBean;
 
 /**
  * A repository that supports searching.
@@ -12,6 +13,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
  * @param <E> The entity type
  * @param <I> The id type
  */
+@NoRepositoryBean
 public interface SearchableRepository<E, I> extends JpaRepository<E, I>, JpaSpecificationExecutor<E> {
 
     /**
