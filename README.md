@@ -1,4 +1,6 @@
 # JPA Utilities
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_jpa-utils&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=jwcarman_jpa-utils)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_jpa-utils&metric=coverage)](https://sonarcloud.io/summary/new_code?id=jwcarman_jpa-utils)
 ![Maven Central Version](https://img.shields.io/maven-central/v/org.jwcarman.jpa/jpa-utils)
 
 A collection of utilities I've found useful when writing applications and services using 
