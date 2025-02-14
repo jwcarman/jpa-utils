@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.jwcarman.jpa</groupId>
+    <artifactId>jpa-utils</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <name>jpa-utils</name>
+    <description>A library of useful Jakarta Persistence API utilities.</description>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <java.version>23</java.version>
+
+        <required.maven.version>3.8</required.maven.version>
+
+        <assertj.version>3.26.3</assertj.version>
+        <jacoco.version>0.8.12</jacoco.version>
+        <jakarta.persistence.version>3.0.0</jakarta.persistence.version>
+        <java-uuid-generator.version>5.1.0</java-uuid-generator.version>
+        <junit.version>5.11.3</junit.version>
+        <spring-data.version>2024.1.2</spring-data.version>
+
+        <compiler.plugin.version>3.13.0</compiler.plugin.version>
+        <enforcer.plugin.version>3.5.0</enforcer.plugin.version>
+        <failsafe.plugin.version>3.5.2</failsafe.plugin.version>
+        <gpg.plugin.version>3.2.7</gpg.plugin.version>
+        <javadoc.plugin.version>3.11.1</javadoc.plugin.version>
+        <sonatype.plugin.version>0.6.0</sonatype.plugin.version>
+        <source.plugin.version>3.3.1</source.plugin.version>
+        <surefire.plugin.version>3.5.2</surefire.plugin.version>
+    </properties>
+
+    <url>https://github.com/jwcarman/jpa-utils</url>
+
+    <developers>
+        <developer>
+            <id>jwcarman</id>
+            <name>James Carman</name>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>Apache 2</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+            <comments>A business-friendly OSS license</comments>
+        </license>
+    </licenses>
+
+    <scm>
+        <url>https://github.com/jwcarman/jpa-utils</url>
+        <connection>scm:git:git@github.com:jwcarman/jpa-utils.git</connection>
+        <developerConnection>scm:git:git@github.com:jwcarman/jpa-utils.git</developerConnection>
+    </scm>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.data</groupId>
+                <artifactId>spring-data-bom</artifactId>
+                <version>${spring-data.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+            <version>${jakarta.persistence.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.uuid</groupId>
+            <artifactId>java-uuid-generator</artifactId>
+            <version>${java-uuid-generator.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-jpa</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${enforcer.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>${required.maven.version}</version>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>${java.version}</version>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler.plugin.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire.plugin.version}</version>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${failsafe.plugin.version}</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>
