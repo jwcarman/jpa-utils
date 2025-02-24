@@ -1,32 +1,44 @@
 package org.jwcarman.jpa.spring.search;
 
-import org.jwcarman.jpa.spring.page.Pages;
-import org.jwcarman.jpa.spring.page.SortProvider;
+import org.jwcarman.jpa.search.Searchables;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.NoRepositoryBean;
 
+import static java.util.Optional.ofNullable;
+
 /**
  * A repository that supports searching.
  *
- * @param <E> The entity type
+ * @param <S> The entity type
  * @param <I> The id type
  */
 @NoRepositoryBean
-public interface SearchableRepository<E, I> extends JpaRepository<E, I>, JpaSpecificationExecutor<E> {
+public interface SearchableRepository<S, I> extends JpaRepository<S, I>, JpaSpecificationExecutor<S> {
+
+// -------------------------- STATIC METHODS --------------------------
+
+    private static <E> Specification<E> searchSpecification(String searchTerm) {
+        return (root, _, criteriaBuilder) ->
+                Searchables.createSearchPredicate(searchTerm, root, criteriaBuilder);
+    }
+
+// -------------------------- OTHER METHODS --------------------------
 
     /**
-     * Search for entities using the given specification.
+     * Search for entities matching the search term.
      *
-     * @param spec The search specification
-     * @return The page of entities
+     * @param searchTerm the search term to use, can be null or empty
+     * @param pageable   the pageable to request a paged result, can be {@link Pageable#unpaged()}, must not be null.
+     * @return a page of entities matching the search term (if any) or all entities if the search term is null or empty.
      */
-    default <O extends Enum<O> & SortProvider> Page<E> search(SearchSpec spec, Class<O> sortType) {
-        final var pageable = Pages.pageableOf(spec, sortType);
-        return spec.searchTerm()
+    default Page<S> search(String searchTerm, Pageable pageable) {
+        return ofNullable(searchTerm)
                 .filter(str -> !str.isEmpty())
-                .map(searchTerm -> findAll(new SearchSpecification<>(searchTerm), pageable))
+                .map(str -> findAll(searchSpecification(str), pageable))
                 .orElse(findAll(pageable));
     }
 

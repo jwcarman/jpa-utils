@@ -1,4 +1,4 @@
-package org.jwcarman.jpa.spring.page;
+package org.jwcarman.jpa.pagination;
 
 import java.util.List;
 

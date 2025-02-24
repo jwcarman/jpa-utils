@@ -1,4 +1,4 @@
-package org.jwcarman.jpa.spring.search;
+package org.jwcarman.jpa.search;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

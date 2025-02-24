@@ -1,18 +1,18 @@
-package org.jwcarman.jpa.spring.page;
+package org.jwcarman.jpa.pagination;
 
 import java.util.Optional;
 
 /**
  * A specification for a page of data.
  */
-public interface PageSpec {
+public interface PageSpec<S extends Enum<S> & SortPropertyProvider> {
 
     /**
      * The page index, 0-based.
      *
      * @return the page index
      */
-    Optional<Integer> pageIndex();
+    Optional<Integer> pageNumber();
 
     /**
      * The size of the page.
@@ -26,12 +26,12 @@ public interface PageSpec {
      *
      * @return the field to sort by
      */
-    Optional<String> sortBy();
+    Optional<S> sortBy();
 
     /**
      * The direction to sort by.
      *
      * @return the direction to sort by
      */
-    Optional<String> sortDirection();
+    Optional<SortDirection> sortDirection();
 }
