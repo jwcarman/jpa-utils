@@ -5,6 +5,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Version;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 
 import java.util.UUID;
 
@@ -61,6 +63,7 @@ public abstract class BaseEntity {
      */
     @Id
     @Column(updatable = false, nullable = false)
+    @Getter
     private UUID id;
 
     /**
@@ -71,6 +74,7 @@ public abstract class BaseEntity {
      * </p>
      */
     @Version
+    @Getter
     private Long version;
 
 // --------------------------- CONSTRUCTORS ---------------------------
@@ -99,26 +103,6 @@ public abstract class BaseEntity {
         this.id = requireNonNull(id, "ID cannot be null.");
     }
 
-// --------------------- GETTER METHODS ---------------------
-
-    /**
-     * Returns the unique identifier of the entity.
-     *
-     * @return the entity's UUID, guaranteed to be non-null
-     */
-    public UUID getId() {
-        return id;
-    }
-
-    /**
-     * Returns the version number used for optimistic locking.
-     *
-     * @return the version number, or {@code null} if the entity is not yet persisted
-     */
-    public Long getVersion() {
-        return version;
-    }
-
 // ------------------------ CANONICAL METHODS ------------------------
 
     /**
@@ -145,4 +129,5 @@ public abstract class BaseEntity {
     public final int hashCode() {
         return id.hashCode();
     }
+
 }
