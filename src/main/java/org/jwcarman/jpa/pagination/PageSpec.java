@@ -12,7 +12,7 @@ public interface PageSpec<S extends Enum<S> & SortPropertyProvider> {
      *
      * @return the page index
      */
-    Optional<Integer> pageNumber();
+    Optional<Integer> pageIndex();
 
     /**
      * The size of the page.

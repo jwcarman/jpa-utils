@@ -1,10 +1,15 @@
 package org.jwcarman.jpa.spring.page;
 
+import lombok.Getter;
 import org.jwcarman.jpa.pagination.PageSpec;
+import org.jwcarman.jpa.pagination.SortDirection;
 import org.jwcarman.jpa.pagination.SortPropertyProvider;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+
+import static org.springframework.data.domain.Sort.Direction.ASC;
+import static org.springframework.data.domain.Sort.Direction.DESC;
 
 public class DefaultPageableFactory implements PageableFactory {
 
@@ -12,6 +17,7 @@ public class DefaultPageableFactory implements PageableFactory {
 
     private static final int FIRST_PAGE = 0;
 
+    @Getter
     private final int defaultPageSize;
     private final Pageable defaultPageable;
 
@@ -29,7 +35,7 @@ public class DefaultPageableFactory implements PageableFactory {
             return defaultPageable;
         }
 
-        final int pageNumber = spec.pageNumber().orElse(FIRST_PAGE);
+        final int pageNumber = spec.pageIndex().orElse(FIRST_PAGE);
         final int pageSize = spec.pageSize().orElse(defaultPageSize);
 
         final Sort.Direction direction = sortDirectionOf(spec);
@@ -44,10 +50,7 @@ public class DefaultPageableFactory implements PageableFactory {
 
     private static <S extends Enum<S> & SortPropertyProvider> Sort.Direction sortDirectionOf(PageSpec<S> spec) {
         return spec.sortDirection()
-                .map(e -> switch (e) {
-                    case ASC -> Sort.Direction.ASC;
-                    case DESC -> Sort.Direction.DESC;
-                })
+                .map(e -> e == SortDirection.ASC ? ASC : DESC)
                 .orElse(Sort.DEFAULT_DIRECTION);
     }
 
