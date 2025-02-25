@@ -2,6 +2,7 @@ package org.jwcarman.jpa.entity;
 
 import com.fasterxml.uuid.Generators;
 import jakarta.persistence.Column;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Version;

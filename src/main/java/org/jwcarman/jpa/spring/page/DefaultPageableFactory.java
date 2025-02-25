@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import static java.util.Optional.ofNullable;
 import static org.springframework.data.domain.Sort.Direction.ASC;
 import static org.springframework.data.domain.Sort.Direction.DESC;
 
@@ -35,12 +36,12 @@ public class DefaultPageableFactory implements PageableFactory {
             return defaultPageable;
         }
 
-        final int pageNumber = spec.pageIndex().orElse(FIRST_PAGE);
-        final int pageSize = spec.pageSize().orElse(defaultPageSize);
+        final int pageNumber = ofNullable(spec.pageIndex()).orElse(FIRST_PAGE);
+        final int pageSize = ofNullable(spec.pageSize()).orElse(defaultPageSize);
 
         final Sort.Direction direction = sortDirectionOf(spec);
 
-        final Sort sort = spec.sortBy()
+        final Sort sort = ofNullable(spec.sortBy())
                 .map(SortPropertyProvider::getSortProperty)
                 .map(property -> Sort.by(direction, property))
                 .orElseGet(Sort::unsorted);
@@ -49,7 +50,7 @@ public class DefaultPageableFactory implements PageableFactory {
     }
 
     private static <S extends Enum<S> & SortPropertyProvider> Sort.Direction sortDirectionOf(PageSpec<S> spec) {
-        return spec.sortDirection()
+        return ofNullable(spec.sortDirection())
                 .map(e -> e == SortDirection.ASC ? ASC : DESC)
                 .orElse(Sort.DEFAULT_DIRECTION);
     }

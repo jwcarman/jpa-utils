@@ -1,13 +1,10 @@
 package org.jwcarman.jpa.spring.page;
 
-import lombok.Data;
 import org.junit.jupiter.api.Test;
-import org.jwcarman.jpa.pagination.PageSpecDto;
+import org.jwcarman.jpa.pagination.PageSpec;
 import org.jwcarman.jpa.pagination.SortDirection;
 import org.jwcarman.jpa.pagination.SortPropertyProvider;
 import org.springframework.data.domain.Sort;
-
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,7 +29,7 @@ class DefaultPageableFactoryTest {
     @Test
     void shouldCreateUnsortedWithNoSortBy() {
         final var factory = new DefaultPageableFactory(10);
-        final var spec = new PageSpecDto<PersonSort>(Optional.of(0), Optional.of(10), Optional.empty(), Optional.empty());
+        final var spec = new PageSpecDto<PersonSort>(0, 10, null, null);
 
         final var pageable = factory.createPageable(spec);
 
@@ -46,7 +43,7 @@ class DefaultPageableFactoryTest {
     @Test
     void shouldCreateAscendingSorted() {
         final var factory = new DefaultPageableFactory(10);
-        final var spec = new PageSpecDto<>(Optional.of(0), Optional.of(10), Optional.of(PersonSort.FIRST_NAME), Optional.of(SortDirection.ASC));
+        final var spec = new PageSpecDto<>(0, 10, PersonSort.FIRST_NAME, SortDirection.ASC);
 
         final var pageable = factory.createPageable(spec);
 
@@ -59,7 +56,7 @@ class DefaultPageableFactoryTest {
     @Test
     void shouldCreateDescendingSorted() {
         final var factory = new DefaultPageableFactory(10);
-        final var spec = new PageSpecDto<>(Optional.of(0), Optional.of(10), Optional.of(PersonSort.LAST_NAME), Optional.of(SortDirection.DESC));
+        final var spec = new PageSpecDto<>(0, 10, PersonSort.LAST_NAME, SortDirection.DESC);
 
         final var pageable = factory.createPageable(spec);
 
@@ -72,7 +69,7 @@ class DefaultPageableFactoryTest {
     @Test
     void shouldCreateDefaultSorted() {
         final var factory = new DefaultPageableFactory(10);
-        final var spec = new PageSpecDto<>(Optional.of(0), Optional.of(10), Optional.of(PersonSort.LAST_NAME), Optional.empty());
+        final var spec = new PageSpecDto<>(0, 10, PersonSort.LAST_NAME, null);
 
         final var pageable = factory.createPageable(spec);
 
@@ -82,12 +79,6 @@ class DefaultPageableFactoryTest {
         assertThat(pageable.getSort()).isEqualTo(Sort.by(Sort.DEFAULT_DIRECTION, "lastName"));
     }
 
-
-    @Data
-    private static class Person {
-        private String firstName;
-        private String lastName;
-    }
 
     private enum PersonSort implements SortPropertyProvider {
         FIRST_NAME("firstName"),
@@ -103,5 +94,12 @@ class DefaultPageableFactoryTest {
         public String getSortProperty() {
             return sortProperty;
         }
+    }
+
+    public record PageSpecDto<S extends Enum<S> & SortPropertyProvider>(
+            Integer pageIndex,
+            Integer pageSize,
+            S sortBy,
+            SortDirection sortDirection) implements PageSpec<S> {
     }
 }

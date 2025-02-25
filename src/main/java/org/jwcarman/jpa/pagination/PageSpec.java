@@ -12,26 +12,26 @@ public interface PageSpec<S extends Enum<S> & SortPropertyProvider> {
      *
      * @return the page index
      */
-    Optional<Integer> pageIndex();
+    Integer pageIndex();
 
     /**
      * The size of the page.
      *
      * @return the size of the page
      */
-    Optional<Integer> pageSize();
+    Integer pageSize();
 
     /**
      * The field to sort by.
      *
      * @return the field to sort by
      */
-    Optional<S> sortBy();
+    S sortBy();
 
     /**
      * The direction to sort by.
      *
      * @return the direction to sort by
      */
-    Optional<SortDirection> sortDirection();
+    SortDirection sortDirection();
 }

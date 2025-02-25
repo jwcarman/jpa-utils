@@ -4,10 +4,12 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.metamodel.SingularAttribute;
+import lombok.experimental.UtilityClass;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+@UtilityClass
 public class Searchables {
 
 // -------------------------- STATIC METHODS --------------------------
@@ -46,11 +48,4 @@ public class Searchables {
                 .replace("%", "\\%")    // Escape wildcard '%'
                 .replace("_", "\\_");   // Escape wildcard '_'
     }
-
-// --------------------------- CONSTRUCTORS ---------------------------
-
-    private Searchables() {
-        throw new UnsupportedOperationException("Utility class");
-    }
-
 }

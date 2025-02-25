@@ -36,10 +36,7 @@ public interface SearchableRepository<S, I> extends JpaRepository<S, I>, JpaSpec
      * @return a page of entities matching the search term (if any) or all entities if the search term is null or empty.
      */
     default Page<S> search(String searchTerm, Pageable pageable) {
-        return ofNullable(searchTerm)
-                .filter(str -> !str.isEmpty())
-                .map(str -> findAll(searchSpecification(str), pageable))
-                .orElse(findAll(pageable));
+        return findAll(searchSpecification(searchTerm), pageable);
     }
 
 }
