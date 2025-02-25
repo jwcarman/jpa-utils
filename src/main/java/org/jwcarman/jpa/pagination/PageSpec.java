@@ -1,7 +1,5 @@
 package org.jwcarman.jpa.pagination;
 
-import java.util.Optional;
-
 /**
  * A specification for a page of data.
  */

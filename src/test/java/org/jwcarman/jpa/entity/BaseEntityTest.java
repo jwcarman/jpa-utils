@@ -1,6 +1,8 @@
 package org.jwcarman.jpa.entity;
 
 import jakarta.persistence.Entity;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,13 +51,12 @@ class BaseEntityTest {
     }
 
     @Entity
+    @Getter
+    @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
     public static class Person extends BaseEntity {
 
         private String firstName;
         private String lastName;
-
-        public Person() {
-        }
 
         public Person(String firstName, String lastName) {
             this.firstName = firstName;
