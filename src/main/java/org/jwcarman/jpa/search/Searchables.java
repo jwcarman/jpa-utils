@@ -21,11 +21,18 @@ public class Searchables {
 
         final String pattern = "%" + sanitizeSearchTerm(searchTerm).toLowerCase() + "%";
 
-        return root.getModel().getSingularAttributes().stream()
+        final var attributes = root.getModel().getSingularAttributes().stream()
                 .filter(attribute -> String.class.equals(attribute.getJavaType()))
                 .filter(Searchables::isSearchable)
-                .map(attribute -> like(root, builder, attribute, pattern))
-                .reduce(builder.conjunction(), builder::or);
+                .toList();
+
+        if (attributes.isEmpty()) {
+            return builder.conjunction();
+        } else {
+            return builder.or(attributes.stream()
+                    .map(attribute -> like(root, builder, attribute, pattern))
+                    .toArray(Predicate[]::new));
+        }
     }
 
     private static Predicate like(Root<?> root, CriteriaBuilder builder, SingularAttribute<?, ?> attribute, String pattern) {

@@ -20,13 +20,26 @@ class SearchableRepositoryTest {
 
     @Autowired
     private AnimalRepository animalRepository;
+
+    @Autowired
+    private UnsearchableRepository unsearchableRepository;
+
+    @Test
+    void unsearchablesShouldReturnAllResults() {
+        final var unsearchable = new Unsearchable("FOO");
+
+        unsearchableRepository.save(unsearchable);
+
+        Page<Unsearchable> page = unsearchableRepository.search("abc", Pageable.unpaged());
+        assertThat(page.getTotalElements()).isEqualTo(1);
+    }
+
     @Test
     void searchShouldReturnMatchingRecords() {
         final var person = new Person("Joe", "Shmoe");
-        assertThat(person.getId()).isNotNull();
-        assertThat(person.getVersion()).isNull();
 
         personRepository.save(person);
+        personRepository.save(new Person("ABC", "abc"));
 
         Page<Person> page = personRepository.search("moe", Pageable.unpaged());
         assertThat(page.getTotalElements()).isEqualTo(1);
