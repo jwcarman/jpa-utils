@@ -3,6 +3,7 @@ package org.jwcarman.jpa.spring.audit;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import lombok.Getter;
 import org.jwcarman.jpa.entity.BaseEntity;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -52,6 +53,7 @@ import java.util.UUID;
  */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
+@Getter
 public abstract class AuditableEntity extends BaseEntity {
 
 // ------------------------------ FIELDS ------------------------------
@@ -115,43 +117,5 @@ public abstract class AuditableEntity extends BaseEntity {
      */
     protected AuditableEntity(UUID id) {
         super(id);
-    }
-
-// --------------------- GETTER METHODS ---------------------
-
-    /**
-     * Returns the user who created this entity.
-     *
-     * @return the creator's username or identifier
-     */
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    /**
-     * Returns the creation timestamp.
-     *
-     * @return the timestamp when this entity was created
-     */
-    public Instant getCreatedDate() {
-        return createdDate;
-    }
-
-    /**
-     * Returns the user who last modified this entity.
-     *
-     * @return the last modifier's username or identifier
-     */
-    public String getModifiedBy() {
-        return modifiedBy;
-    }
-
-    /**
-     * Returns the last modification timestamp.
-     *
-     * @return the timestamp when this entity was last modified
-     */
-    public Instant getModifiedDate() {
-        return modifiedDate;
     }
 }

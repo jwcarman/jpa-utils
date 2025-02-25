@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.test.context.ContextConfiguration;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -53,6 +55,18 @@ class SearchableRepositoryTest {
         repository.save(person);
 
         Page<Person> page = repository.search("", Pageable.unpaged());
+        assertThat(page.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void emptySearchTermShouldReturnAllRecords() {
+        final var person = new Person(UUID.randomUUID(), "Joe", "Shmoe");
+        assertThat(person.getId()).isNotNull();
+        assertThat(person.getVersion()).isNull();
+
+        repository.save(person);
+
+        Page<Person> page = repository.search(" ", Pageable.unpaged());
         assertThat(page.getTotalElements()).isEqualTo(1);
     }
 }
