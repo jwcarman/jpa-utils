@@ -4,10 +4,12 @@ import lombok.experimental.UtilityClass;
 import org.jwcarman.jpa.pagination.PageSpec;
 import org.jwcarman.jpa.pagination.SortDirection;
 import org.jwcarman.jpa.pagination.SortPropertyProvider;
+import org.jwcarman.jpa.pagination.UnknownSortByValueException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import static org.springframework.data.domain.Sort.Direction.ASC;
@@ -84,7 +86,7 @@ import static org.springframework.data.domain.Sort.Direction.DESC;
  *             Pageable pageable = Pageables.pageableOf(pageSpec, PersonSort.class);
  *             Page<Person> page = personRepository.findAll(pageable);
  *             return Pages.pageDtoOf(page.map(PersonDto::fromEntity));
- *         } catch (IllegalArgumentException e) {
+ *         } catch (UnknownSortByValueException e) {
  *             throw new InvalidSortFieldException("Invalid sort field: " + pageSpec.sortBy(), e);
  *         }
  *     }
@@ -162,7 +164,7 @@ public class Pageables {
      * <ul>
      *   <li>If {@code spec.sortBy()} is null → returns unsorted</li>
      *   <li>Otherwise, attempts to resolve the string to an enum constant via {@code Enum.valueOf()}</li>
-     *   <li>If resolution fails (invalid field name) → throws {@link IllegalArgumentException}</li>
+     *   <li>If resolution fails (invalid field name) → throws {@link UnknownSortByValueException}</li>
      * </ul>
      *
      * <p><strong>Null Handling:</strong></p>
@@ -189,7 +191,7 @@ public class Pageables {
      * @param sortEnumClass the enum class to resolve sort field names to, may be null for unsorted
      * @param <S>           the sort enum type that implements {@link SortPropertyProvider}
      * @return a Spring {@link Pageable} instance, never null
-     * @throws IllegalArgumentException if spec.sortBy() cannot be resolved to a valid enum constant
+     * @throws UnknownSortByValueException if spec.sortBy() cannot be resolved to a valid enum constant
      * @see #pageableOf(PageSpec, Class, int)
      */
     public static <S extends Enum<S> & SortPropertyProvider> Pageable pageableOf(PageSpec spec, Class<S> sortEnumClass) {
@@ -207,7 +209,7 @@ public class Pageables {
      * <ul>
      *   <li>If {@code spec.sortBy()} is null → returns unsorted</li>
      *   <li>Otherwise, attempts to resolve the string to an enum constant via {@code Enum.valueOf()}</li>
-     *   <li>If resolution fails (invalid field name) → throws {@link IllegalArgumentException}</li>
+     *   <li>If resolution fails (invalid field name) → throws {@link UnknownSortByValueException}</li>
      * </ul>
      *
      * <p><strong>Null Handling:</strong></p>
@@ -239,7 +241,7 @@ public class Pageables {
      * // Example 4: Invalid sort field throws exception
      * PageSpec spec4 = new PageRequestDto(0, 20, "INVALID_FIELD", SortDirection.ASC);
      * Pageable pageable4 = Pageables.pageableOf(spec4, PersonSort.class);
-     * // Throws: IllegalArgumentException: No enum constant PersonSort.INVALID_FIELD
+     * // Throws: UnknownSortByValueException: Unknown sort by value "INVALID_FIELD", expecting one of FIRST_NAME, LAST_NAME, EMAIL.
      * }</pre>
      *
      * @param spec            the page specification, may be null
@@ -247,7 +249,7 @@ public class Pageables {
      * @param defaultPageSize the default page size to use when spec is null or spec.pageSize() is null; must be positive
      * @param <S>             the sort enum type that implements {@link SortPropertyProvider}
      * @return a Spring {@link Pageable} instance, never null
-     * @throws IllegalArgumentException if spec.sortBy() cannot be resolved to a valid enum constant
+     * @throws UnknownSortByValueException if spec.sortBy() cannot be resolved to a valid enum constant
      * @see #pageableOf(PageSpec, Class)
      */
     public static <S extends Enum<S> & SortPropertyProvider> Pageable pageableOf(PageSpec spec, Class<S> sortEnumClass, int defaultPageSize) {
@@ -271,7 +273,14 @@ public class Pageables {
         if (sortBy == null || sortEnumClass == null) {
             return Optional.empty();
         }
-        return Optional.of(Enum.valueOf(sortEnumClass, sortBy.toUpperCase()));
+        try {
+            return Optional.of(Enum.valueOf(sortEnumClass, sortBy.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            String[] expectedValues = Arrays.stream(sortEnumClass.getEnumConstants())
+                    .map(Enum::name)
+                    .toArray(String[]::new);
+            throw new UnknownSortByValueException(sortBy, expectedValues);
+        }
     }
 
     private static Sort.Direction sortDirectionOf(PageSpec spec) {

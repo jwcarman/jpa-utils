@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.jwcarman.jpa.pagination.PageSpec;
 import org.jwcarman.jpa.pagination.SortDirection;
 import org.jwcarman.jpa.pagination.SortPropertyProvider;
+import org.jwcarman.jpa.pagination.UnknownSortByValueException;
 import org.springframework.data.domain.Sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -123,8 +124,10 @@ class PageablesTest {
         assertThat(org.assertj.core.api.Assertions.catchThrowable(() ->
                 Pageables.pageableOf(spec, PersonSort.class)
         ))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("INVALID_FIELD");
+                .isInstanceOf(UnknownSortByValueException.class)
+                .hasMessageContaining("INVALID_FIELD")
+                .hasMessageContaining("FIRST_NAME")
+                .hasMessageContaining("LAST_NAME");
     }
 
     @Test

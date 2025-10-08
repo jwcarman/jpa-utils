@@ -173,7 +173,7 @@ package org.jwcarman.jpa.pagination;
  *             Pageable pageable = Pageables.pageableOf(pageSpec, PersonSort.class);
  *             Page<Person> page = personRepository.findAll(pageable);
  *             return Pages.pageDtoOf(page.map(PersonDto::fromEntity));
- *         } catch (IllegalArgumentException e) {
+ *         } catch (UnknownSortByValueException e) {
  *             throw new InvalidSortFieldException("Invalid sort field: " + pageSpec.sortBy(), e);
  *         }
  *     }
