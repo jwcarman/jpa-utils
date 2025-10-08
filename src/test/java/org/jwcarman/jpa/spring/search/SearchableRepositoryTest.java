@@ -11,7 +11,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DataJpaTest
+@DataJpaTest(showSql = false)
 @ContextConfiguration(classes = {SpringBootConfig.class})
 class SearchableRepositoryTest {
 
@@ -32,6 +32,24 @@ class SearchableRepositoryTest {
 
         Page<Unsearchable> page = unsearchableRepository.search("abc", Pageable.unpaged());
         assertThat(page.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void unsearchablesShouldReturnAllResultsOnMultipleSearches() {
+        // This test verifies that the caching works correctly for entities without @Searchable fields
+        final var unsearchable1 = new Unsearchable("FOO");
+        final var unsearchable2 = new Unsearchable("BAR");
+
+        unsearchableRepository.save(unsearchable1);
+        unsearchableRepository.save(unsearchable2);
+
+        // First search - may populate cache and log warning
+        Page<Unsearchable> page1 = unsearchableRepository.search("abc", Pageable.unpaged());
+        assertThat(page1.getTotalElements()).isEqualTo(2);
+
+        // Second search - should use cached result (warning logged only once during cache population)
+        Page<Unsearchable> page2 = unsearchableRepository.search("xyz", Pageable.unpaged());
+        assertThat(page2.getTotalElements()).isEqualTo(2);
     }
 
     @Test

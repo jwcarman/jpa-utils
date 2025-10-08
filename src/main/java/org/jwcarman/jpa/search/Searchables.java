@@ -3,11 +3,15 @@ package org.jwcarman.jpa.search;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.SingularAttribute;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Utility class for building JPA Criteria API predicates based on fields marked with {@link Searchable}.
@@ -172,7 +176,16 @@ import java.lang.reflect.Method;
  * @see org.jwcarman.jpa.spring.search.SearchableRepository
  */
 @UtilityClass
+@Slf4j
 public class Searchables {
+
+// -------------------------- STATIC FIELDS --------------------------
+
+    /**
+     * Cache of searchable attributes per entity type to avoid repeated reflection operations.
+     * Key: EntityType, Value: List of searchable String attribute names
+     */
+    private static final ConcurrentHashMap<EntityType<?>, List<String>> SEARCHABLE_ATTRIBUTES_CACHE = new ConcurrentHashMap<>();
 
 // -------------------------- STATIC METHODS --------------------------
 
@@ -202,7 +215,6 @@ public class Searchables {
      * @param root       the query root representing the entity, must not be null
      * @param builder    the criteria builder for constructing predicates, must not be null
      * @return a predicate matching the search term across all searchable fields, never null
-     *
      * @throws NullPointerException if {@code root} or {@code builder} is null
      */
     public static Predicate createSearchPredicate(String searchTerm, Root<?> root, CriteriaBuilder builder) {
@@ -212,22 +224,41 @@ public class Searchables {
 
         final String pattern = "%" + sanitizeSearchTerm(searchTerm).toLowerCase() + "%";
 
-        final var attributes = root.getModel().getSingularAttributes().stream()
-                .filter(attribute -> String.class.equals(attribute.getJavaType()))
-                .filter(Searchables::isSearchable)
-                .toList();
+        final var attributeNames = getSearchableAttributeNames(root.getModel());
 
-        if (attributes.isEmpty()) {
+        if (attributeNames.isEmpty()) {
             return builder.conjunction();
         } else {
-            return builder.or(attributes.stream()
-                    .map(attribute -> like(root, builder, attribute, pattern))
+            return builder.or(attributeNames.stream()
+                    .map(attributeName -> like(root, builder, attributeName, pattern))
                     .toArray(Predicate[]::new));
         }
     }
 
-    private static Predicate like(Root<?> root, CriteriaBuilder builder, SingularAttribute<?, ?> attribute, String pattern) {
-        final var path = root.get(attribute.getName()).as(String.class);
+    /**
+     * Gets the names of searchable attributes for the given entity type, using a cache to avoid repeated reflection.
+     *
+     * @param entityType the entity type to inspect
+     * @return list of searchable String attribute names (may be empty but never null)
+     */
+    private static List<String> getSearchableAttributeNames(EntityType<?> entityType) {
+        return SEARCHABLE_ATTRIBUTES_CACHE.computeIfAbsent(entityType, type ->
+                {
+                    List<String> searchableAttributeNames = type.getSingularAttributes().stream()
+                            .filter(attribute -> String.class.equals(attribute.getJavaType()))
+                            .filter(Searchables::isSearchable)
+                            .map(SingularAttribute::getName)
+                            .toList();
+                    if (searchableAttributeNames.isEmpty()) {
+                        log.warn("No searchable attributes found for {}", type.getName());
+                    }
+                    return searchableAttributeNames;
+                }
+        );
+    }
+
+    private static Predicate like(Root<?> root, CriteriaBuilder builder, String attributeName, String pattern) {
+        final var path = root.get(attributeName).as(String.class);
         final var lower = builder.lower(path);
         return builder.like(lower, pattern, '\\');
     }
