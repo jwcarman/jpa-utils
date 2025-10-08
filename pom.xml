@@ -29,6 +29,7 @@
         <logback.version>1.5.19</logback.version>
         <lombok.version>1.18.42</lombok.version>
         <mariadb-driver.version>3.5.6</mariadb-driver.version>
+        <mockito.version>5.17.0</mockito.version>
         <mysql-driver.version>9.4.0</mysql-driver.version>
         <oracle-driver.version>23.9.0.25.07</oracle-driver.version>
         <postgresql-driver.version>42.7.8</postgresql-driver.version>
@@ -39,6 +40,7 @@
 
         <!-- Plugin Versions -->
         <compiler.plugin.version>3.14.1</compiler.plugin.version>
+        <dependency.plugin.version>3.8.1</dependency.plugin.version>
         <enforcer.plugin.version>3.6.2</enforcer.plugin.version>
         <failsafe.plugin.version>3.5.4</failsafe.plugin.version>
         <gpg.plugin.version>3.2.8</gpg.plugin.version>
@@ -53,6 +55,10 @@
         <sonar.organization>jwcarman</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.projectKey>jwcarman_jpa-utils</sonar.projectKey>
+
+        <!-- JaCoCo argLine (overridden by jacoco:prepare-agent when ci profile is active) -->
+        <jacocoArgLine></jacocoArgLine>
+
     </properties>
 
     <url>https://github.com/jwcarman/jpa-utils</url>
@@ -155,6 +161,12 @@
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -313,8 +325,23 @@
                 </configuration>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>${dependency.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire.plugin.version}</version>
+                <configuration>
+                    <argLine>@{jacocoArgLine} -javaagent:"${org.mockito:mockito-core:jar}" -javaagent:"${net.bytebuddy:byte-buddy-agent:jar}" -Xshare:off</argLine>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
@@ -329,6 +356,7 @@
                 </executions>
                 <configuration>
                     <forkedProcessExitTimeoutInSeconds>30</forkedProcessExitTimeoutInSeconds>
+                    <argLine>@{jacocoArgLine} -javaagent:"${org.mockito:mockito-core:jar}" -javaagent:"${net.bytebuddy:byte-buddy-agent:jar}" -Xshare:off</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -348,6 +376,10 @@
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>
                         <version>${jacoco.plugin.version}</version>
+                        <configuration>
+                            <!-- This writes the JaCoCo agent args into the property -->
+                            <propertyName>jacocoArgLine</propertyName>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>prepare-agent</id>
