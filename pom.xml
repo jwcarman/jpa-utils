@@ -315,7 +315,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <forkedProcessExitTimeoutInSeconds>5</forkedProcessExitTimeoutInSeconds>
+                    <forkedProcessExitTimeoutInSeconds>30</forkedProcessExitTimeoutInSeconds>
                     <argLine>-Djava.util.logging.config.file=${project.build.testOutputDirectory}/logging.properties</argLine>
                 </configuration>
             </plugin>
