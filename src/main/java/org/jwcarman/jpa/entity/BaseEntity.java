@@ -108,25 +108,19 @@ public abstract class BaseEntity {
     /**
      * Determines equality based on the entity's unique identifier.
      * <p>
-     * Two entities are considered equal if they are of compatible types (proxy-safe) and have the same non-null identifier.
-     * This implementation ensures that different aggregate types don't compare equal even if they share the same UUID.
+     * Two entities are considered equal if they have the same UUID.
+     * Since UUIDs are universally unique, collision across different entity types
+     * is effectively impossible and represents a design error if it occurs.
      * </p>
      *
      * @param o the object to compare against
-     * @return {@code true} if both entities are type-compatible and have the same UUID, {@code false} otherwise
+     * @return {@code true} if both entities have the same UUID, {@code false} otherwise
      */
     @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof BaseEntity that)) return false;
-
-        // Ensure type compatibility (handles proxies and inheritance)
-        if (!this.getClass().isAssignableFrom(that.getClass()) &&
-            !that.getClass().isAssignableFrom(this.getClass())) {
-            return false;
-        }
-
-        return id != null && id.equals(that.id);
+        return Objects.equals(id, that.id);
     }
 
     /**

@@ -53,16 +53,6 @@ class BaseEntityTest {
     }
 
     @Test
-    void differentEntityTypesShouldNotBeEqualEvenWithSameId() {
-        final UUID sharedId = UUID.randomUUID();
-        final var person = new Person(sharedId, "Joe", "Shmoe");
-        final var animal = new Animal(sharedId, "Dog");
-
-        assertThat(person).isNotEqualTo(animal);
-        assertThat(animal).isNotEqualTo(person);
-    }
-
-    @Test
     void entitiesOfSameTypeWithSameIdShouldBeEqual() {
         final UUID sharedId = UUID.randomUUID();
         final var person1 = new Person(sharedId, "Joe", "Shmoe");
