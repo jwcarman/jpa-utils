@@ -609,6 +609,26 @@ GET /api/books?query=java&pageSize=50
 - **Spring Framework** (optional): 6.2.2 or higher
 - **Spring Data JPA** (optional): 2024.1.2 or higher
 
+## Database Compatibility
+
+This library is thoroughly tested against multiple database platforms using [Testcontainers](https://testcontainers.com/) to ensure compatibility across different SQL dialects and implementations.
+
+**Tested Databases:**
+- ✅ **PostgreSQL 17** - Open source, standards-compliant
+- ✅ **MySQL 9.1** - Most widely deployed open source database
+- ✅ **MariaDB 11.6** - MySQL fork with enhancements
+- ✅ **CockroachDB v24.3** - Distributed SQL, PostgreSQL-compatible
+- ✅ **Oracle Database Free 23** - Enterprise standard
+- ✅ **H2** - Embedded database for testing
+
+**Test Coverage:**
+- 75+ integration tests across 5 database platforms
+- Comprehensive validation of pagination, sorting, and search functionality
+- SQL wildcard escaping and edge case handling
+- Multi-field search across different SQL dialects
+
+All integration tests run automatically in CI/CD to ensure consistent behavior across all supported databases.
+
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

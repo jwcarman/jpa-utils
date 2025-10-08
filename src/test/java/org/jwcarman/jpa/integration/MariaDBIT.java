@@ -6,6 +6,8 @@ import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Duration;
+
 /**
  * Integration tests for MariaDB database.
  * <p>
@@ -15,9 +17,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @Tag("integration")
-public class MariaDBIntegrationTest extends DatabaseIntegrationTest {
+public class MariaDBIT extends DatabaseIT {
 
     @Container
     @ServiceConnection
-    static MariaDBContainer<?> mariadb = new MariaDBContainer<>("mariadb:11.6");
+    static MariaDBContainer<?> mariadb = new MariaDBContainer<>("mariadb:11.6")
+            .withStartupTimeout(Duration.ofSeconds(60))
+            .withStartupAttempts(1)
+            .withCommand("--skip-log-bin",
+                        "--innodb-flush-log-at-trx-commit=2",
+                        "--max-connections=50");
 }

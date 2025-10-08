@@ -9,6 +9,12 @@
         </encoder>
     </appender>
 
+    <!-- Suppress HikariCP connection validation warnings during test teardown -->
+    <logger name="com.zaxxer.hikari.pool.PoolBase" level="ERROR" />
+
+    <!-- Suppress SQL Server JDBC driver connection warnings during container startup -->
+    <logger name="com.microsoft.sqlserver.jdbc" level="SEVERE" />
+
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
     </root>

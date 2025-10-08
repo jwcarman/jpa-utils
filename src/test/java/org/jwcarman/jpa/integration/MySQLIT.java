@@ -6,6 +6,8 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Duration;
+
 /**
  * Integration tests for MySQL database.
  * <p>
@@ -15,9 +17,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @Tag("integration")
-public class MySQLIntegrationTest extends DatabaseIntegrationTest {
+public class MySQLIT extends DatabaseIT {
 
     @Container
     @ServiceConnection
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:9.1");
+    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:9.1")
+            .withStartupTimeout(Duration.ofSeconds(60))
+            .withStartupAttempts(1)
+            .withCommand("--skip-log-bin",
+                    "--innodb-flush-log-at-trx-commit=2",
+                    "--max-connections=50");
 }

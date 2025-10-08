@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 })
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = {TestConfig.class})
-public abstract class DatabaseIntegrationTest {
+public abstract class DatabaseIT {
 
     @Autowired
     protected TestPersonRepository personRepository;

@@ -6,6 +6,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Duration;
+
 /**
  * Integration tests for PostgreSQL database.
  * <p>
@@ -15,9 +17,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @Tag("integration")
-public class PostgreSQLIntegrationTest extends DatabaseIntegrationTest {
+public class PostgreSQLIT extends DatabaseIT {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
+            .withStartupTimeout(Duration.ofSeconds(60))
+            .withStartupAttempts(1);
 }
