@@ -62,7 +62,7 @@ class PageParamsTest {
 
         PageParams captured = controller.getLastPageParams();
         assertThat(captured).isNotNull();
-        assertThat(captured.pageIndex()).isEqualTo(0);
+        assertThat(captured.pageIndex()).isZero();
         assertThat(captured.pageSize()).isEqualTo(10);
         assertThat(captured.sortBy()).isNull();
         assertThat(captured.sortDirection()).isNull();
@@ -92,8 +92,8 @@ class PageParamsTest {
 
         PageParams captured = controller.getLastPageParams();
         assertThat(captured).isNotNull();
-        assertThat(captured.pageIndex()).isEqualTo(0);
-        assertThat(captured.pageSize()).isEqualTo(0);
+        assertThat(captured.pageIndex()).isZero();
+        assertThat(captured.pageSize()).isZero();
     }
 
     @Configuration
