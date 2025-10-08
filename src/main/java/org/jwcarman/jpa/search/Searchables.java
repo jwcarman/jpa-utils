@@ -269,7 +269,7 @@ public class Searchables {
         return switch (attribute.getJavaMember()) {
             case Method m -> m.isAnnotationPresent(Searchable.class);
             case Field f -> f.isAnnotationPresent(Searchable.class);
-            default -> false;
+            case null, default -> false;
         };
     }
 
