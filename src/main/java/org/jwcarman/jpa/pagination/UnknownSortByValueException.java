@@ -2,9 +2,6 @@ package org.jwcarman.jpa.pagination;
 
 import lombok.Getter;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
 /**
  * Exception thrown when an unknown sort by value is provided that cannot be resolved to a valid enum constant.
  *
@@ -51,8 +48,6 @@ public class UnknownSortByValueException extends RuntimeException {
     }
 
     private static String buildMessage(String providedValue, String[] expectedValues) {
-        String expectedList = Arrays.stream(expectedValues)
-                .collect(Collectors.joining(", "));
-        return String.format("Unknown sort by value \"%s\", expecting one of %s.", providedValue, expectedList);
+        return String.format("Unknown sort by value \"%s\", expecting one of %s.", providedValue, String.join(", ", expectedValues));
     }
 }
