@@ -10,7 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Optional;
 
 import static org.springframework.data.domain.Sort.Direction.ASC;
@@ -270,7 +269,7 @@ public class Pageables {
         }
         final int pageNumber = Math.max(FIRST_PAGE, Optional.ofNullable(spec.pageIndex()).orElse(FIRST_PAGE));
         final int rawPageSize = Optional.ofNullable(spec.pageSize()).orElse(defaultPageSize);
-        final int pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, rawPageSize));
+        final int pageSize = Math.clamp(rawPageSize, 1, MAX_PAGE_SIZE);
 
         final Sort.Direction direction = sortDirectionOf(spec);
 

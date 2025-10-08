@@ -6,6 +6,8 @@ import org.jwcarman.jpa.spring.page.Pageables;
 import org.jwcarman.jpa.spring.search.SearchableRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -106,36 +108,27 @@ public abstract class DatabaseIT {
         assertThat(page.getContent().get(2).getLastName()).isEqualTo("Jackson");
     }
 
-    @Test
-    void shouldSearchByFirstName() {
-        Page<TestPerson> page = personRepository.search("alice", Pageable.unpaged());
+    @ParameterizedTest
+    @CsvSource({
+            "alice,              firstName, Alice",
+            "brown,              lastName,  Brown",
+            "charlie@example.com, email,     charlie@example.com",
+            "DIANA,              firstName, Diana"
+    })
+    void shouldSearchAndFindExactMatch(String searchTerm, String fieldName, String expectedValue) {
+        Page<TestPerson> page = personRepository.search(searchTerm, Pageable.unpaged());
 
         assertThat(page.getTotalElements()).isEqualTo(1);
-        assertThat(page.getContent().get(0).getFirstName()).isEqualTo("Alice");
-    }
 
-    @Test
-    void shouldSearchByLastName() {
-        Page<TestPerson> page = personRepository.search("brown", Pageable.unpaged());
+        TestPerson result = page.getContent().get(0);
+        String actualValue = switch (fieldName) {
+            case "firstName" -> result.getFirstName();
+            case "lastName" -> result.getLastName();
+            case "email" -> result.getEmail();
+            default -> throw new IllegalArgumentException("Unknown field: " + fieldName);
+        };
 
-        assertThat(page.getTotalElements()).isEqualTo(1);
-        assertThat(page.getContent().get(0).getLastName()).isEqualTo("Brown");
-    }
-
-    @Test
-    void shouldSearchByEmail() {
-        Page<TestPerson> page = personRepository.search("charlie@example.com", Pageable.unpaged());
-
-        assertThat(page.getTotalElements()).isEqualTo(1);
-        assertThat(page.getContent().get(0).getEmail()).isEqualTo("charlie@example.com");
-    }
-
-    @Test
-    void shouldSearchCaseInsensitive() {
-        Page<TestPerson> page = personRepository.search("DIANA", Pageable.unpaged());
-
-        assertThat(page.getTotalElements()).isEqualTo(1);
-        assertThat(page.getContent().get(0).getFirstName()).isEqualTo("Diana");
+        assertThat(actualValue).isEqualTo(expectedValue);
     }
 
     @Test
@@ -146,22 +139,16 @@ public abstract class DatabaseIT {
         assertThat(page.getTotalElements()).isGreaterThanOrEqualTo(3);
     }
 
-    @Test
-    void shouldEscapeUnderscoreWildcard() {
-        Page<TestPerson> page = personRepository.search("test_user", Pageable.unpaged());
+    @ParameterizedTest
+    @CsvSource({
+            "test_user, test_user@example.com",
+            "test%user, test%user@example.com"
+    })
+    void shouldEscapeWildcardCharacters(String searchTerm, String expectedEmail) {
+        Page<TestPerson> page = personRepository.search(searchTerm, Pageable.unpaged());
 
-        // Should match "test_user@example.com" email address
         assertThat(page.getTotalElements()).isEqualTo(1);
-        assertThat(page.getContent().get(0).getEmail()).isEqualTo("test_user@example.com");
-    }
-
-    @Test
-    void shouldEscapePercentWildcard() {
-        Page<TestPerson> page = personRepository.search("test%user", Pageable.unpaged());
-
-        // Should match "test%user@example.com" email address
-        assertThat(page.getTotalElements()).isEqualTo(1);
-        assertThat(page.getContent().get(0).getEmail()).isEqualTo("test%user@example.com");
+        assertThat(page.getContent().get(0).getEmail()).isEqualTo(expectedEmail);
     }
 
     @Test
@@ -175,7 +162,7 @@ public abstract class DatabaseIT {
 
         // Should find names containing 'e' (Alice, Charlie, Eve, Grace, Henry, etc.)
         assertThat(page.getTotalElements()).isGreaterThan(0);
-        assertThat(page.getContent().size()).isLessThanOrEqualTo(5);
+        assertThat(page.getContent()).hasSizeLessThanOrEqualTo(5);
 
         // Should be sorted by first name ascending
         for (int i = 0; i < page.getContent().size() - 1; i++) {
