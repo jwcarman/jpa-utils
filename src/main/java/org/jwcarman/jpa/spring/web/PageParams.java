@@ -122,6 +122,10 @@ import org.springframework.lang.Nullable;
  * }</pre>
  *
  * @see PageSpec
+ * @param pageIndex      the zero-based page number, may be null (defaults to 0)
+ * @param pageSize       the number of items per page, may be null (defaults to 20)
+ * @param sortBy         the sort field name as string (e.g., "LAST_NAME"), may be null for unsorted
+ * @param sortDirection  the sort direction (ASC or DESC), may be null (defaults to ASC)
  * @see org.jwcarman.jpa.spring.page.Pageables
  * @see org.jwcarman.jpa.spring.page.Pages
  */
