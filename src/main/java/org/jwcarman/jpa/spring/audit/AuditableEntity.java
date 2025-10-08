@@ -65,7 +65,7 @@ public abstract class AuditableEntity extends BaseEntity {
      * </p>
      */
     @CreatedDate
-    @Column(updatable = false, nullable = false)
+    @Column(updatable = false)
     private Instant createdDate;
 
     /**
@@ -75,7 +75,6 @@ public abstract class AuditableEntity extends BaseEntity {
      * </p>
      */
     @LastModifiedDate
-    @Column(nullable = false)
     private Instant modifiedDate;
 
     /**
@@ -85,7 +84,7 @@ public abstract class AuditableEntity extends BaseEntity {
      * </p>
      */
     @CreatedBy
-    @Column(updatable = false, nullable = false)
+    @Column(updatable = false)
     private String createdBy;
 
     /**
@@ -95,7 +94,6 @@ public abstract class AuditableEntity extends BaseEntity {
      * </p>
      */
     @LastModifiedBy
-    @Column(nullable = false)
     private String modifiedBy;
 
 // --------------------------- CONSTRUCTORS ---------------------------

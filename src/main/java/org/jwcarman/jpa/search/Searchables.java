@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -222,7 +223,7 @@ public class Searchables {
             return builder.conjunction(); // No filtering if searchTerm is empty/null
         }
 
-        final String pattern = "%" + sanitizeSearchTerm(searchTerm).toLowerCase() + "%";
+        final String pattern = "%" + sanitizeSearchTerm(searchTerm).toLowerCase(Locale.ROOT) + "%";
 
         final var attributeNames = getSearchableAttributeNames(root.getJavaType(), root.getModel());
 

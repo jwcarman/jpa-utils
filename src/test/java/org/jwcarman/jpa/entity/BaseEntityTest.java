@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class BaseEntityTest {
@@ -50,6 +52,44 @@ class BaseEntityTest {
         assertThat(entity.hashCode()).isNotZero();
     }
 
+    @Test
+    void differentEntityTypesShouldNotBeEqualEvenWithSameId() {
+        final UUID sharedId = UUID.randomUUID();
+        final var person = new Person(sharedId, "Joe", "Shmoe");
+        final var animal = new Animal(sharedId, "Dog");
+
+        assertThat(person).isNotEqualTo(animal);
+        assertThat(animal).isNotEqualTo(person);
+    }
+
+    @Test
+    void entitiesOfSameTypeWithSameIdShouldBeEqual() {
+        final UUID sharedId = UUID.randomUUID();
+        final var person1 = new Person(sharedId, "Joe", "Shmoe");
+        final var person2 = new Person(sharedId, "Jane", "Doe");
+
+        assertThat(person1).isEqualTo(person2);
+        assertThat(person2).isEqualTo(person1);
+    }
+
+    @Test
+    void entitiesOfSameTypeWithDifferentIdsShouldNotBeEqual() {
+        final var person1 = new Person("Joe", "Shmoe");
+        final var person2 = new Person("Jane", "Doe");
+
+        assertThat(person1).isNotEqualTo(person2);
+        assertThat(person2).isNotEqualTo(person1);
+    }
+
+    @Test
+    void entityShouldHandleNullIdInEquality() {
+        final var person1 = new Person("Joe", "Shmoe");
+        final var person2 = new Person("Jane", "Doe");
+
+        // This shouldn't happen in production (IDs are generated), but test defensive code
+        assertThat(person1.equals(person2)).isFalse();
+    }
+
     @Entity
     @Getter
     @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
@@ -61,6 +101,29 @@ class BaseEntityTest {
         public Person(String firstName, String lastName) {
             this.firstName = firstName;
             this.lastName = lastName;
+        }
+
+        public Person(UUID id, String firstName, String lastName) {
+            super(id);
+            this.firstName = firstName;
+            this.lastName = lastName;
+        }
+    }
+
+    @Entity
+    @Getter
+    @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
+    public static class Animal extends BaseEntity {
+
+        private String name;
+
+        public Animal(String name) {
+            this.name = name;
+        }
+
+        public Animal(UUID id, String name) {
+            super(id);
+            this.name = name;
         }
     }
 }

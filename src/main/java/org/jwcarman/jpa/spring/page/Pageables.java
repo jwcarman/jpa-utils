@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.springframework.data.domain.Sort.Direction.ASC;
@@ -274,7 +275,7 @@ public class Pageables {
             return Optional.empty();
         }
         try {
-            return Optional.of(Enum.valueOf(sortEnumClass, sortBy.toUpperCase()));
+            return Optional.of(Enum.valueOf(sortEnumClass, sortBy.toUpperCase(Locale.ROOT)));
         } catch (IllegalArgumentException e) {
             String[] expectedValues = Arrays.stream(sortEnumClass.getEnumConstants())
                     .map(Enum::name)
