@@ -131,6 +131,30 @@ class PageablesTest {
     }
 
     @Test
+    void shouldThrowExceptionForLowercaseSortField() {
+        final var spec = new PageSpecDto(0, 10, "first_name", SortDirection.ASC);
+
+        assertThat(org.assertj.core.api.Assertions.catchThrowable(() ->
+                Pageables.pageableOf(spec, PersonSort.class)
+        ))
+                .isInstanceOf(UnknownSortByValueException.class)
+                .hasMessageContaining("first_name")
+                .hasMessageContaining("FIRST_NAME")
+                .hasMessageContaining("LAST_NAME");
+    }
+
+    @Test
+    void shouldBeCaseSensitiveForSortField() {
+        final var spec = new PageSpecDto(0, 10, "First_Name", SortDirection.ASC);
+
+        assertThat(org.assertj.core.api.Assertions.catchThrowable(() ->
+                Pageables.pageableOf(spec, PersonSort.class)
+        ))
+                .isInstanceOf(UnknownSortByValueException.class)
+                .hasMessageContaining("First_Name");
+    }
+
+    @Test
     void shouldHandleNullSortEnumClass() {
         final var spec = new PageSpecDto(0, 10, "LAST_NAME", SortDirection.ASC);
 

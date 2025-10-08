@@ -287,7 +287,7 @@ public class Pageables {
             return Optional.empty();
         }
         try {
-            return Optional.of(Enum.valueOf(sortEnumClass, sortBy.toUpperCase(Locale.ROOT)));
+            return Optional.of(Enum.valueOf(sortEnumClass, sortBy));
         } catch (IllegalArgumentException e) {
             String[] expectedValues = Arrays.stream(sortEnumClass.getEnumConstants())
                     .map(Enum::name)
