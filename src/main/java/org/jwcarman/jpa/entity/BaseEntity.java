@@ -7,6 +7,7 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Version;
 import lombok.Getter;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import static java.util.Objects.requireNonNull;
@@ -130,12 +131,16 @@ public abstract class BaseEntity {
 
     /**
      * Computes a hash code using the entity's unique identifier.
+     * <p>
+     * Returns a stable hash code based on the entity's UUID, or 0 if the ID is null.
+     * This ensures consistent behavior even in edge cases where the ID might not be set.
+     * </p>
      *
-     * @return a stable hash code based on the entity's UUID
+     * @return a stable hash code based on the entity's UUID, or 0 if ID is null
      */
     @Override
     public final int hashCode() {
-        return id.hashCode();
+        return Objects.hashCode(id);
     }
 
 }
