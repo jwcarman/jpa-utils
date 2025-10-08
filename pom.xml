@@ -5,7 +5,7 @@
 
     <groupId>org.jwcarman.jpa</groupId>
     <artifactId>jpa-utils</artifactId>
-    <version>0.0.9</version>
+    <version>1.0-SNAPSHOT</version>
 
     <name>jpa-utils</name>
     <description>A library of useful Jakarta Persistence API utilities.</description>
