@@ -152,6 +152,15 @@ public class Pageables {
      */
     public static final int DEFAULT_PAGE_SIZE = 20;
 
+    /**
+     * The maximum allowed page size to prevent memory exhaustion attacks.
+     * <p>
+     * Requests exceeding this limit will be silently clamped to this value.
+     * This protects against DoS attacks where malicious clients request extremely large page sizes.
+     * </p>
+     */
+    public static final int MAX_PAGE_SIZE = 1000;
+
 // -------------------------- STATIC METHODS --------------------------
 
     /**
@@ -213,11 +222,13 @@ public class Pageables {
      *   <li>If resolution fails (invalid field name) → throws {@link UnknownSortByValueException}</li>
      * </ul>
      *
-     * <p><strong>Null Handling:</strong></p>
+     * <p><strong>Value Normalization:</strong></p>
      * <ul>
      *   <li>If {@code spec} is null → returns pageable with page {@value #FIRST_PAGE}, size {@code defaultPageSize}, unsorted</li>
-     *   <li>If {@code spec.pageIndex()} is null → uses {@value #FIRST_PAGE}</li>
+     *   <li>If {@code spec.pageIndex()} is null or negative → uses {@value #FIRST_PAGE}</li>
      *   <li>If {@code spec.pageSize()} is null → uses {@code defaultPageSize}</li>
+     *   <li>If {@code spec.pageSize()} is zero or negative → clamped to 1</li>
+     *   <li>If {@code spec.pageSize()} exceeds {@value #MAX_PAGE_SIZE} → clamped to {@value #MAX_PAGE_SIZE}</li>
      *   <li>If {@code spec.sortBy()} is null → returns unsorted</li>
      *   <li>If {@code spec.sortDirection()} is null → uses {@link Sort#DEFAULT_DIRECTION}</li>
      *   <li>If {@code sortEnumClass} is null → returns unsorted</li>
@@ -258,7 +269,8 @@ public class Pageables {
             return PageRequest.of(FIRST_PAGE, defaultPageSize, Sort.unsorted());
         }
         final int pageNumber = Math.max(FIRST_PAGE, Optional.ofNullable(spec.pageIndex()).orElse(FIRST_PAGE));
-        final int pageSize = Math.max(1, Optional.ofNullable(spec.pageSize()).orElse(defaultPageSize));
+        final int rawPageSize = Optional.ofNullable(spec.pageSize()).orElse(defaultPageSize);
+        final int pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, rawPageSize));
 
         final Sort.Direction direction = sortDirectionOf(spec);
 
