@@ -256,8 +256,8 @@ public class Pageables {
         if (spec == null) {
             return PageRequest.of(FIRST_PAGE, defaultPageSize, Sort.unsorted());
         }
-        final int pageNumber = Optional.ofNullable(spec.pageIndex()).orElse(FIRST_PAGE);
-        final int pageSize = Optional.ofNullable(spec.pageSize()).orElse(defaultPageSize);
+        final int pageNumber = Math.max(FIRST_PAGE, Optional.ofNullable(spec.pageIndex()).orElse(FIRST_PAGE));
+        final int pageSize = Math.max(1, Optional.ofNullable(spec.pageSize()).orElse(defaultPageSize));
 
         final Sort.Direction direction = sortDirectionOf(spec);
 

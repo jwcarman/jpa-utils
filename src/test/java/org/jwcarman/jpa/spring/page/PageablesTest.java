@@ -142,6 +142,54 @@ class PageablesTest {
         assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
     }
 
+    @Test
+    void shouldClampZeroPageSizeToOne() {
+        final var spec = new PageSpecDto(0, 0, null, null);
+
+        final var pageable = Pageables.pageableOf(spec, PersonSort.class);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isZero();
+        assertThat(pageable.getPageSize()).isEqualTo(1);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
+    @Test
+    void shouldClampNegativePageSizeToOne() {
+        final var spec = new PageSpecDto(0, -5, null, null);
+
+        final var pageable = Pageables.pageableOf(spec, PersonSort.class);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isZero();
+        assertThat(pageable.getPageSize()).isEqualTo(1);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
+    @Test
+    void shouldClampNegativePageIndexToZero() {
+        final var spec = new PageSpecDto(-1, 10, null, null);
+
+        final var pageable = Pageables.pageableOf(spec, PersonSort.class);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isZero();
+        assertThat(pageable.getPageSize()).isEqualTo(10);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
+    @Test
+    void shouldClampBothNegativePageIndexAndZeroPageSize() {
+        final var spec = new PageSpecDto(-5, 0, null, null);
+
+        final var pageable = Pageables.pageableOf(spec, PersonSort.class);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isZero();
+        assertThat(pageable.getPageSize()).isEqualTo(1);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
     private enum PersonSort implements SortPropertyProvider {
         FIRST_NAME("firstName"),
         LAST_NAME("lastName");

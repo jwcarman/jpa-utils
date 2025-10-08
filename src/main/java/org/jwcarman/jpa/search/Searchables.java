@@ -183,9 +183,9 @@ public class Searchables {
 
     /**
      * Cache of searchable attributes per entity type to avoid repeated reflection operations.
-     * Key: EntityType, Value: List of searchable String attribute names
+     * Key: Entity Class, Value: List of searchable String attribute names
      */
-    private static final ConcurrentHashMap<EntityType<?>, List<String>> SEARCHABLE_ATTRIBUTES_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class<?>, List<String>> SEARCHABLE_ATTRIBUTES_CACHE = new ConcurrentHashMap<>();
 
 // -------------------------- STATIC METHODS --------------------------
 
@@ -224,7 +224,7 @@ public class Searchables {
 
         final String pattern = "%" + sanitizeSearchTerm(searchTerm).toLowerCase() + "%";
 
-        final var attributeNames = getSearchableAttributeNames(root.getModel());
+        final var attributeNames = getSearchableAttributeNames(root.getJavaType(), root.getModel());
 
         if (attributeNames.isEmpty()) {
             return builder.conjunction();
@@ -238,19 +238,20 @@ public class Searchables {
     /**
      * Gets the names of searchable attributes for the given entity type, using a cache to avoid repeated reflection.
      *
+     * @param entityClass the entity class to use as cache key
      * @param entityType the entity type to inspect
      * @return list of searchable String attribute names (may be empty but never null)
      */
-    private static List<String> getSearchableAttributeNames(EntityType<?> entityType) {
-        return SEARCHABLE_ATTRIBUTES_CACHE.computeIfAbsent(entityType, type ->
+    private static List<String> getSearchableAttributeNames(Class<?> entityClass, EntityType<?> entityType) {
+        return SEARCHABLE_ATTRIBUTES_CACHE.computeIfAbsent(entityClass, clazz ->
                 {
-                    List<String> searchableAttributeNames = type.getSingularAttributes().stream()
+                    List<String> searchableAttributeNames = entityType.getSingularAttributes().stream()
                             .filter(attribute -> String.class.equals(attribute.getJavaType()))
                             .filter(Searchables::isSearchable)
                             .map(SingularAttribute::getName)
                             .toList();
                     if (searchableAttributeNames.isEmpty()) {
-                        log.warn("No searchable attributes found for {}", type.getName());
+                        log.warn("No searchable attributes found for {}", entityType.getName());
                     }
                     return searchableAttributeNames;
                 }
