@@ -13,7 +13,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <java.version>23</java.version>
+        <java.version>21</java.version>
 
         <required.maven.version>3.8</required.maven.version>
 
@@ -22,7 +22,8 @@
         <jakarta.persistence.version>3.1.0</jakarta.persistence.version>
         <java-uuid-generator.version>5.1.0</java-uuid-generator.version>
         <junit.version>5.11.3</junit.version>
-        <lombok.version>1.18.36</lombok.version>
+        <lombok.version>1.18.38</lombok.version>
+        <spring.version>6.2.2</spring.version>
         <spring-boot.version>3.4.2</spring-boot.version>
         <spring-data.version>2024.1.2</spring-data.version>
 
@@ -80,6 +81,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -89,6 +97,7 @@
             <artifactId>jakarta.persistence-api</artifactId>
             <version>${jakarta.persistence.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.fasterxml.uuid</groupId>
             <artifactId>java-uuid-generator</artifactId>
@@ -105,6 +114,12 @@
             <artifactId>spring-data-jpa</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -138,6 +153,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
             <version>${spring-boot.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>6.0.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>

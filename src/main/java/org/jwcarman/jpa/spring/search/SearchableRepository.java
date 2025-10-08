@@ -20,7 +20,7 @@ public interface SearchableRepository<S, I> extends JpaRepository<S, I>, JpaSpec
 // -------------------------- STATIC METHODS --------------------------
 
     private static <E> Specification<E> searchSpecification(String searchTerm) {
-        return (root, _, criteriaBuilder) ->
+        return (root, query, criteriaBuilder) ->
                 Searchables.createSearchPredicate(searchTerm, root, criteriaBuilder);
     }
 
