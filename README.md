@@ -24,6 +24,7 @@ A collection of utilities for building REST APIs with [Jakarta Persistence API](
   - [Searchable Repository](#searchable-repository)
 - [Complete Example](#complete-example)
 - [Requirements](#requirements)
+- [Database Compatibility](#database-compatibility)
 - [License](#license)
 
 ## Features
