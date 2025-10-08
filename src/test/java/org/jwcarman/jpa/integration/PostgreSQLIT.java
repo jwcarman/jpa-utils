@@ -21,7 +21,7 @@ public class PostgreSQLIT extends DatabaseIT {
 
     @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine")
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17.6-alpine")
             .withStartupTimeout(Duration.ofSeconds(60))
             .withStartupAttempts(1);
 }
