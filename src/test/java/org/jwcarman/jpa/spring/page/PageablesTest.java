@@ -7,20 +7,26 @@ import org.jwcarman.jpa.pagination.SortPropertyProvider;
 import org.springframework.data.domain.Sort;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.jwcarman.jpa.spring.page.Pageables.DEFAULT_PAGE_SIZE;
+import static org.jwcarman.jpa.spring.page.Pageables.FIRST_PAGE;
 
-class DefaultPageableFactoryTest {
+class PageablesTest {
+
     @Test
-    void shouldInitializeWithDefaultPageSize() {
-        final var factory = new DefaultPageableFactory(23);
-        assertThat(factory.getDefaultPageSize()).isEqualTo(23);
+    void shouldCreatePageableFromNullSpecWithDefaultPageSize() {
+        final var pageable = Pageables.pageableOf(null);
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isEqualTo(FIRST_PAGE);
+        assertThat(pageable.getPageSize()).isEqualTo(DEFAULT_PAGE_SIZE);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+        assertThat(pageable.getOffset()).isZero();
     }
 
     @Test
-    void shouldCreatePageableFromNullSpec() {
-        final var factory = new DefaultPageableFactory(10);
-        final var pageable = factory.createPageable(null);
+    void shouldCreatePageableFromNullSpecWithCustomDefaultPageSize() {
+        final var pageable = Pageables.pageableOf(null, 10);
         assertThat(pageable).isNotNull();
-        assertThat(pageable.getPageNumber()).isZero();
+        assertThat(pageable.getPageNumber()).isEqualTo(FIRST_PAGE);
         assertThat(pageable.getPageSize()).isEqualTo(10);
         assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
         assertThat(pageable.getOffset()).isZero();
@@ -28,24 +34,21 @@ class DefaultPageableFactoryTest {
 
     @Test
     void shouldCreateUnsortedWithNoSortBy() {
-        final var factory = new DefaultPageableFactory(10);
         final var spec = new PageSpecDto<PersonSort>(0, 10, null, null);
 
-        final var pageable = factory.createPageable(spec);
+        final var pageable = Pageables.pageableOf(spec);
 
         assertThat(pageable).isNotNull();
         assertThat(pageable.getPageNumber()).isZero();
         assertThat(pageable.getPageSize()).isEqualTo(10);
         assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
-
     }
 
     @Test
     void shouldCreateAscendingSorted() {
-        final var factory = new DefaultPageableFactory(10);
         final var spec = new PageSpecDto<>(0, 10, PersonSort.FIRST_NAME, SortDirection.ASC);
 
-        final var pageable = factory.createPageable(spec);
+        final var pageable = Pageables.pageableOf(spec);
 
         assertThat(pageable).isNotNull();
         assertThat(pageable.getPageNumber()).isZero();
@@ -55,10 +58,9 @@ class DefaultPageableFactoryTest {
 
     @Test
     void shouldCreateDescendingSorted() {
-        final var factory = new DefaultPageableFactory(10);
         final var spec = new PageSpecDto<>(0, 10, PersonSort.LAST_NAME, SortDirection.DESC);
 
-        final var pageable = factory.createPageable(spec);
+        final var pageable = Pageables.pageableOf(spec);
 
         assertThat(pageable).isNotNull();
         assertThat(pageable.getPageNumber()).isZero();
@@ -68,10 +70,9 @@ class DefaultPageableFactoryTest {
 
     @Test
     void shouldCreateDefaultSorted() {
-        final var factory = new DefaultPageableFactory(10);
         final var spec = new PageSpecDto<>(0, 10, PersonSort.LAST_NAME, null);
 
-        final var pageable = factory.createPageable(spec);
+        final var pageable = Pageables.pageableOf(spec);
 
         assertThat(pageable).isNotNull();
         assertThat(pageable.getPageNumber()).isZero();
@@ -79,6 +80,41 @@ class DefaultPageableFactoryTest {
         assertThat(pageable.getSort()).isEqualTo(Sort.by(Sort.DEFAULT_DIRECTION, "lastName"));
     }
 
+    @Test
+    void shouldUseDefaultPageSizeWhenSpecPageSizeIsNull() {
+        final var spec = new PageSpecDto<PersonSort>(0, null, null, null);
+
+        final var pageable = Pageables.pageableOf(spec);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isZero();
+        assertThat(pageable.getPageSize()).isEqualTo(DEFAULT_PAGE_SIZE);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
+    @Test
+    void shouldUseCustomDefaultPageSizeWhenSpecPageSizeIsNull() {
+        final var spec = new PageSpecDto<PersonSort>(0, null, null, null);
+
+        final var pageable = Pageables.pageableOf(spec, 15);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isZero();
+        assertThat(pageable.getPageSize()).isEqualTo(15);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
+    @Test
+    void shouldUseFirstPageWhenSpecPageIndexIsNull() {
+        final var spec = new PageSpecDto<PersonSort>(null, 10, null, null);
+
+        final var pageable = Pageables.pageableOf(spec);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isEqualTo(FIRST_PAGE);
+        assertThat(pageable.getPageSize()).isEqualTo(10);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
 
     private enum PersonSort implements SortPropertyProvider {
         FIRST_NAME("firstName"),
