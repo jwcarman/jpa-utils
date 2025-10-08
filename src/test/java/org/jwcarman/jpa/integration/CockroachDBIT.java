@@ -22,7 +22,7 @@ public class CockroachDBIT extends DatabaseIT {
 
     @Container
     @ServiceConnection
-    static CockroachContainer cockroach = new CockroachContainer("cockroachdb/cockroach:v24.3")
+    static CockroachContainer cockroach = new CockroachContainer("cockroachdb/cockroach:latest-v25.3")
             .withStartupTimeout(Duration.ofSeconds(60))
             .withStartupAttempts(1);
 }

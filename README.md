@@ -615,10 +615,10 @@ GET /api/books?query=java&pageSize=50
 This library is thoroughly tested against multiple database platforms using [Testcontainers](https://testcontainers.com/) to ensure compatibility across different SQL dialects and implementations.
 
 **Tested Databases:**
-- ✅ **PostgreSQL 17** - Open source, standards-compliant
-- ✅ **MySQL 9.1** - Most widely deployed open source database
+- ✅ **PostgreSQL 17.6** - Open source, standards-compliant
+- ✅ **MySQL 9.2** - Most widely deployed open source database
 - ✅ **MariaDB 11.6** - MySQL fork with enhancements
-- ✅ **CockroachDB v24.3** - Distributed SQL, PostgreSQL-compatible
+- ✅ **CockroachDB v25.3** - Distributed SQL, PostgreSQL-compatible
 - ✅ **Oracle Database Free 23** - Enterprise standard
 - ✅ **H2** - Embedded database for testing
 

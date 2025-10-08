@@ -19,23 +19,23 @@
         <maven.project.sourceRoots.warningsDisabled>true</maven.project.sourceRoots.warningsDisabled>
 
         <!-- Dependency Versions -->
-        <assertj.version>3.26.3</assertj.version>
-        <h2.version>2.3.232</h2.version>
-        <hibernate.version>6.6.5.Final</hibernate.version>
+        <assertj.version>3.27.6</assertj.version>
+        <h2.version>2.4.240</h2.version>
+        <hibernate.version>6.6.31.Final</hibernate.version>
         <jakarta.persistence.version>3.1.0</jakarta.persistence.version>
         <jakarta.servlet.version>6.0.0</jakarta.servlet.version>
-        <java-uuid-generator.version>5.1.0</java-uuid-generator.version>
-        <junit.version>5.11.3</junit.version>
-        <logback.version>1.5.16</logback.version>
-        <lombok.version>1.18.38</lombok.version>
-        <mariadb-driver.version>3.5.1</mariadb-driver.version>
-        <mysql-driver.version>9.1.0</mysql-driver.version>
-        <oracle-driver.version>23.6.0.24.10</oracle-driver.version>
-        <postgresql-driver.version>42.7.4</postgresql-driver.version>
-        <spring.version>6.2.2</spring.version>
+        <java-uuid-generator.version>5.1.1</java-uuid-generator.version>
+        <junit.version>5.14.0</junit.version>
+        <logback.version>1.5.19</logback.version>
+        <lombok.version>1.18.42</lombok.version>
+        <mariadb-driver.version>3.5.6</mariadb-driver.version>
+        <mysql-driver.version>9.4.0</mysql-driver.version>
+        <oracle-driver.version>23.9.0.25.07</oracle-driver.version>
+        <postgresql-driver.version>42.7.8</postgresql-driver.version>
+        <spring.version>6.2.11</spring.version>
         <spring-boot.version>3.4.2</spring-boot.version>
         <spring-data.version>2024.1.2</spring-data.version>
-        <testcontainers.version>1.20.4</testcontainers.version>
+        <testcontainers.version>1.21.3</testcontainers.version>
 
         <!-- Plugin Versions -->
         <compiler.plugin.version>3.14.1</compiler.plugin.version>
@@ -329,7 +329,6 @@
                 </executions>
                 <configuration>
                     <forkedProcessExitTimeoutInSeconds>30</forkedProcessExitTimeoutInSeconds>
-                    <argLine>-Djava.util.logging.config.file=${project.build.testOutputDirectory}/logging.properties</argLine>
                 </configuration>
             </plugin>
             <plugin>

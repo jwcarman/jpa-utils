@@ -21,7 +21,7 @@ public class MySQLIT extends DatabaseIT {
 
     @Container
     @ServiceConnection
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:9.4")
+    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:9.2")
             .withStartupTimeout(Duration.ofSeconds(60))
             .withStartupAttempts(1)
             .withCommand("--skip-log-bin",
