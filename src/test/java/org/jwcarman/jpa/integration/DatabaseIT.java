@@ -110,25 +110,18 @@ public abstract class DatabaseIT {
 
     @ParameterizedTest
     @CsvSource({
-            "alice,              firstName, Alice",
-            "brown,              lastName,  Brown",
-            "charlie@example.com, email,     charlie@example.com",
-            "DIANA,              firstName, Diana"
+            "alice,              Anderson",
+            "brown,              Brown",
+            "charlie@example.com, Chen",
+            "DIANA,              Davis",
+            "test_user,          WithUnderscore",
+            "test%user,          WithPercent"
     })
-    void shouldSearchAndFindExactMatch(String searchTerm, String fieldName, String expectedValue) {
+    void shouldSearchAndFindExactMatch(String searchTerm, String expectedLastName) {
         Page<TestPerson> page = personRepository.search(searchTerm, Pageable.unpaged());
 
         assertThat(page.getTotalElements()).isEqualTo(1);
-
-        TestPerson result = page.getContent().get(0);
-        String actualValue = switch (fieldName) {
-            case "firstName" -> result.getFirstName();
-            case "lastName" -> result.getLastName();
-            case "email" -> result.getEmail();
-            default -> throw new IllegalArgumentException("Unknown field: " + fieldName);
-        };
-
-        assertThat(actualValue).isEqualTo(expectedValue);
+        assertThat(page.getContent().get(0).getLastName()).isEqualTo(expectedLastName);
     }
 
     @Test
@@ -137,18 +130,6 @@ public abstract class DatabaseIT {
 
         // Should match "Charlie", "Garcia", "Harris"
         assertThat(page.getTotalElements()).isGreaterThanOrEqualTo(3);
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-            "test_user, test_user@example.com",
-            "test%user, test%user@example.com"
-    })
-    void shouldEscapeWildcardCharacters(String searchTerm, String expectedEmail) {
-        Page<TestPerson> page = personRepository.search(searchTerm, Pageable.unpaged());
-
-        assertThat(page.getTotalElements()).isEqualTo(1);
-        assertThat(page.getContent().get(0).getEmail()).isEqualTo(expectedEmail);
     }
 
     @Test
