@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jwcarman/jpa-utils/actions/workflows/maven.yml/badge.svg)](https://github.com/jwcarman/jpa-utils/actions/workflows/maven.yml)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Java](https://img.shields.io/badge/Java-21+-orange.svg)](https://openjdk.org/)
+[![Java](https://img.shields.io/badge/dynamic/xml?url=https://raw.githubusercontent.com/jwcarman/jpa-utils/main/pom.xml&query=//*[local-name()='java.version']/text()&label=Java&color=orange)](https://openjdk.org/)
 [![Maven Central](https://img.shields.io/maven-central/v/org.jwcarman.jpa/jpa-utils)](https://central.sonatype.com/artifact/org.jwcarman.jpa/jpa-utils)
 
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_jpa-utils&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=jwcarman_jpa-utils)
