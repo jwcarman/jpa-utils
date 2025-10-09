@@ -1,11 +1,16 @@
 # JPA Utilities
+
+[![CI](https://github.com/jwcarman/jpa-utils/actions/workflows/maven.yml/badge.svg)](https://github.com/jwcarman/jpa-utils/actions/workflows/maven.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Java](https://img.shields.io/badge/Java-21+-orange.svg)](https://openjdk.org/)
+[![Maven Central](https://img.shields.io/maven-central/v/org.jwcarman.jpa/jpa-utils)](https://central.sonatype.com/artifact/org.jwcarman.jpa/jpa-utils)
+
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_jpa-utils&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=jwcarman_jpa-utils)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_jpa-utils&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=jwcarman_jpa-utils)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_jpa-utils&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=jwcarman_jpa-utils)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_jpa-utils&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=jwcarman_jpa-utils)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_jpa-utils&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=jwcarman_jpa-utils)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=jwcarman_jpa-utils&metric=coverage)](https://sonarcloud.io/summary/new_code?id=jwcarman_jpa-utils)
-![Maven Central Version](https://img.shields.io/maven-central/v/org.jwcarman.jpa/jpa-utils)
 
 A collection of utilities for building REST APIs with [Jakarta Persistence API](https://jakarta.ee/specifications/persistence/), featuring framework-agnostic pagination, annotation-driven search, and optional Spring Data JPA integration.
 
