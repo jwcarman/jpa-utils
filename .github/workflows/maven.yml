@@ -9,6 +9,10 @@ on:
       - synchronize
       - reopened
     branches: [ "main" ]
+
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
