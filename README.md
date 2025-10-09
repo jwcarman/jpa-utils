@@ -23,6 +23,7 @@ A collection of utilities for building REST APIs with [Jakarta Persistence API](
   - [REST Controller Integration](#rest-controller-integration)
   - [Searchable Repository](#searchable-repository)
 - [Error Handling](#error-handling)
+- [Security Considerations](#security-considerations)
 - [Complete Example](#complete-example)
 - [Requirements](#requirements)
 - [Database Compatibility](#database-compatibility)
@@ -548,6 +549,65 @@ When a user requests `GET /api/products?sortBy=INVALID_FIELD`:
 ```
 
 **Note:** Sort field matching is case-sensitive. If your enum constant is `LAST_NAME`, the client must send `sortBy=LAST_NAME` (not `last_name` or `lastName`).
+
+## Security Considerations
+
+### Search Term Length Validation
+
+For production applications, validate search term length at the controller level to prevent excessively long LIKE patterns from impacting database performance:
+
+```java
+@RestController
+@RequestMapping("/api/products")
+public class ProductController {
+
+    @Autowired
+    private ProductService productService;
+
+    @GetMapping
+    public PageDto<ProductDto> search(
+            @RequestParam(required = false)
+            @Size(max = 200, message = "Search term must not exceed 200 characters")
+            String query,
+            PageParams pageParams) {
+        return productService.search(query, pageParams);
+    }
+}
+```
+
+Spring Boot will automatically return HTTP 400 Bad Request when the validation fails:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Invalid request content.",
+  "instance": "/api/products"
+}
+```
+
+**Recommended Limits:**
+- **General search**: 100-200 characters (covers most legitimate search queries)
+- **Long-form content search**: 500 characters (for searching articles, descriptions, etc.)
+- **Never unlimited**: Always enforce some reasonable maximum
+
+### Page Size Limits
+
+The library automatically clamps page sizes to `Pageables.MAX_PAGE_SIZE` (1000) to prevent memory exhaustion attacks. However, you may want to enforce stricter limits at the service or controller level for your specific use case:
+
+```java
+@GetMapping
+public PageDto<ProductDto> getProducts(
+        @RequestParam(required = false)
+        @Min(1)
+        @Max(100)
+        Integer pageSize,
+        PageParams pageParams) {
+    // Custom validation: max 100 items per page for this endpoint
+    return productService.findAll(pageParams);
+}
+```
 
 ## Complete Example
 
