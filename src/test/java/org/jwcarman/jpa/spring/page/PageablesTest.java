@@ -250,6 +250,58 @@ class PageablesTest {
         assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
     }
 
+    @Test
+    void shouldClampDefaultPageSizeWhenSpecIsNull() {
+        final var pageable = Pageables.pageableOf(null, PersonSort.class, 5000);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isEqualTo(FIRST_PAGE);
+        assertThat(pageable.getPageSize()).isEqualTo(Pageables.MAX_PAGE_SIZE);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
+    @Test
+    void shouldClampNegativeDefaultPageSizeWhenSpecIsNull() {
+        final var pageable = Pageables.pageableOf(null, PersonSort.class, -10);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isEqualTo(FIRST_PAGE);
+        assertThat(pageable.getPageSize()).isEqualTo(Pageables.MIN_PAGE_SIZE);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
+    @Test
+    void shouldClampZeroDefaultPageSizeWhenSpecIsNull() {
+        final var pageable = Pageables.pageableOf(null, PersonSort.class, 0);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isEqualTo(FIRST_PAGE);
+        assertThat(pageable.getPageSize()).isEqualTo(Pageables.MIN_PAGE_SIZE);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
+    @Test
+    void shouldClampExtremelyLargeDefaultPageSizeWhenSpecIsNull() {
+        final var pageable = Pageables.pageableOf(null, PersonSort.class, Integer.MAX_VALUE);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isEqualTo(FIRST_PAGE);
+        assertThat(pageable.getPageSize()).isEqualTo(Pageables.MAX_PAGE_SIZE);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
+    @Test
+    void shouldClampDefaultPageSizeWhenSpecPageSizeIsNull() {
+        final var spec = new PageSpecDto(0, null, null, null);
+
+        final var pageable = Pageables.pageableOf(spec, PersonSort.class, 5000);
+
+        assertThat(pageable).isNotNull();
+        assertThat(pageable.getPageNumber()).isZero();
+        assertThat(pageable.getPageSize()).isEqualTo(Pageables.MAX_PAGE_SIZE);
+        assertThat(pageable.getSort()).isEqualTo(Sort.unsorted());
+    }
+
     private enum PersonSort implements SortPropertyProvider {
         FIRST_NAME("firstName"),
         LAST_NAME("lastName");

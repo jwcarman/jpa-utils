@@ -152,6 +152,14 @@ public class Pageables {
     public static final int DEFAULT_PAGE_SIZE = 20;
 
     /**
+     * The minimum allowed page size.
+     * <p>
+     * Requests below this limit will be silently clamped to this value.
+     * </p>
+     */
+    public static final int MIN_PAGE_SIZE = 1;
+
+    /**
      * The maximum allowed page size to prevent memory exhaustion attacks.
      * <p>
      * Requests exceeding this limit will be silently clamped to this value.
@@ -223,11 +231,13 @@ public class Pageables {
      *
      * <p><strong>Value Normalization:</strong></p>
      * <ul>
-     *   <li>If {@code spec} is null → returns pageable with page {@value #FIRST_PAGE}, size {@code defaultPageSize}, unsorted</li>
+     *   <li>If {@code spec} is null → returns pageable with page {@value #FIRST_PAGE}, size {@code defaultPageSize} (clamped to {@value #MIN_PAGE_SIZE}-{@value #MAX_PAGE_SIZE}), unsorted</li>
      *   <li>If {@code spec.pageIndex()} is null or negative → uses {@value #FIRST_PAGE}</li>
      *   <li>If {@code spec.pageSize()} is null → uses {@code defaultPageSize}</li>
-     *   <li>If {@code spec.pageSize()} is zero or negative → clamped to 1</li>
+     *   <li>If {@code spec.pageSize()} is zero or negative → clamped to {@value #MIN_PAGE_SIZE}</li>
      *   <li>If {@code spec.pageSize()} exceeds {@value #MAX_PAGE_SIZE} → clamped to {@value #MAX_PAGE_SIZE}</li>
+     *   <li>If {@code defaultPageSize} is zero or negative → clamped to {@value #MIN_PAGE_SIZE}</li>
+     *   <li>If {@code defaultPageSize} exceeds {@value #MAX_PAGE_SIZE} → clamped to {@value #MAX_PAGE_SIZE}</li>
      *   <li>If {@code spec.sortBy()} is null → returns unsorted</li>
      *   <li>If {@code spec.sortDirection()} is null → uses {@link Sort#DEFAULT_DIRECTION}</li>
      *   <li>If {@code sortEnumClass} is null → returns unsorted</li>
@@ -265,11 +275,10 @@ public class Pageables {
      */
     public static <S extends Enum<S> & SortPropertyProvider> Pageable pageableOf(PageSpec spec, Class<S> sortEnumClass, int defaultPageSize) {
         if (spec == null) {
-            return PageRequest.of(FIRST_PAGE, defaultPageSize, Sort.unsorted());
+            return PageRequest.of(FIRST_PAGE, clampPageSize(defaultPageSize), Sort.unsorted());
         }
         final int pageNumber = Math.max(FIRST_PAGE, Optional.ofNullable(spec.pageIndex()).orElse(FIRST_PAGE));
-        final int rawPageSize = Optional.ofNullable(spec.pageSize()).orElse(defaultPageSize);
-        final int pageSize = Math.clamp(rawPageSize, 1, MAX_PAGE_SIZE);
+        final int pageSize = clampPageSize(Optional.ofNullable(spec.pageSize()).orElse(defaultPageSize));
 
         final Sort.Direction direction = sortDirectionOf(spec);
 
@@ -299,6 +308,16 @@ public class Pageables {
         return Optional.ofNullable(spec.sortDirection())
                 .map(e -> e == SortDirection.ASC ? ASC : DESC)
                 .orElse(Sort.DEFAULT_DIRECTION);
+    }
+
+    /**
+     * Clamps the provided page size to the valid range [{@value #MIN_PAGE_SIZE}, {@value #MAX_PAGE_SIZE}].
+     *
+     * @param pageSize the page size to clamp
+     * @return the clamped page size, guaranteed to be within valid bounds
+     */
+    private static int clampPageSize(int pageSize) {
+        return Math.clamp(pageSize, MIN_PAGE_SIZE, MAX_PAGE_SIZE);
     }
 
 }

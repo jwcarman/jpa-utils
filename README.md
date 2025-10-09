@@ -22,6 +22,7 @@ A collection of utilities for building REST APIs with [Jakarta Persistence API](
 - [Spring Integration](#spring-integration)
   - [REST Controller Integration](#rest-controller-integration)
   - [Searchable Repository](#searchable-repository)
+- [Error Handling](#error-handling)
 - [Complete Example](#complete-example)
 - [Requirements](#requirements)
 - [Database Compatibility](#database-compatibility)
@@ -456,6 +457,97 @@ public class ProductController {
 
 // Example: GET /api/products?query=laptop&pageIndex=0&pageSize=20&sortBy=PRICE&sortDirection=ASC
 ```
+
+## Error Handling
+
+### Invalid Sort Fields
+
+When an invalid sort field is provided, `Pageables.pageableOf()` throws `UnknownSortByValueException`. This typically happens when a user provides a sort field name that doesn't match any of your defined enum constants.
+
+**Service Layer Handling:**
+
+```java
+@Service
+public class ProductService {
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    public PageDto<ProductDto> findAll(PageSpec pageSpec) {
+        try {
+            Pageable pageable = Pageables.pageableOf(pageSpec, ProductSort.class);
+            Page<Product> page = productRepository.findAll(pageable);
+            return Pages.pageDtoOf(page.map(ProductDto::fromEntity));
+        } catch (UnknownSortByValueException e) {
+            // e.getProvidedValue() - the invalid value the user sent
+            // e.getExpectedValues() - array of valid enum constant names
+            throw new BadRequestException("Invalid sort field: " + e.getProvidedValue());
+        }
+    }
+}
+```
+
+**Spring Boot Controller Advice:**
+
+Map the exception to HTTP 400 Bad Request using RFC 7807 `ProblemDetail`:
+
+```java
+@RestControllerAdvice
+public class UnknownSortByValueExceptionAdvice {
+
+    @ExceptionHandler(UnknownSortByValueException.class)
+    public ProblemDetail handleUnknownSortByValue(UnknownSortByValueException e) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());
+    }
+}
+```
+
+**Optional: Add custom properties for debugging:**
+
+```java
+@RestControllerAdvice
+public class UnknownSortByValueExceptionAdvice {
+
+    @ExceptionHandler(UnknownSortByValueException.class)
+    public ProblemDetail handleUnknownSortByValue(UnknownSortByValueException e) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+            HttpStatus.BAD_REQUEST,
+            e.getMessage()
+        );
+        problemDetail.setProperty("providedValue", e.getProvidedValue());
+        problemDetail.setProperty("expectedValues", e.getExpectedValues());
+        return problemDetail;
+    }
+}
+```
+
+**Example Error Response:**
+
+When a user requests `GET /api/products?sortBy=INVALID_FIELD`:
+
+```json
+{
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Unknown sort by value \"INVALID_FIELD\", expecting one of NAME, PRICE, CREATED_DATE, CATEGORY_NAME."
+}
+```
+
+**With optional properties:**
+
+```json
+{
+  "type": "about:blank",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "Unknown sort by value \"INVALID_FIELD\", expecting one of NAME, PRICE, CREATED_DATE, CATEGORY_NAME.",
+  "providedValue": "INVALID_FIELD",
+  "expectedValues": ["NAME", "PRICE", "CREATED_DATE", "CATEGORY_NAME"]
+}
+```
+
+**Note:** Sort field matching is case-sensitive. If your enum constant is `LAST_NAME`, the client must send `sortBy=LAST_NAME` (not `last_name` or `lastName`).
 
 ## Complete Example
 
