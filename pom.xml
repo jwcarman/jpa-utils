@@ -25,7 +25,7 @@
         <jakarta.persistence.version>3.1.0</jakarta.persistence.version>
         <jakarta.servlet.version>6.0.0</jakarta.servlet.version>
         <java-uuid-generator.version>5.1.1</java-uuid-generator.version>
-        <junit.version>5.14.0</junit.version>
+        <junit.version>6.0.0</junit.version>
         <logback.version>1.5.19</logback.version>
         <lombok.version>1.18.42</lombok.version>
         <mariadb-driver.version>3.5.6</mariadb-driver.version>
