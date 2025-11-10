@@ -21,7 +21,7 @@
         <!-- Dependency Versions -->
         <assertj.version>3.27.6</assertj.version>
         <h2.version>2.4.240</h2.version>
-        <hibernate.version>6.6.31.Final</hibernate.version>
+        <hibernate.version>7.1.7.Final</hibernate.version>
         <jakarta.persistence.version>3.1.0</jakarta.persistence.version>
         <jakarta.servlet.version>6.0.0</jakarta.servlet.version>
         <java-uuid-generator.version>5.1.1</java-uuid-generator.version>
