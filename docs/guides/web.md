@@ -21,6 +21,28 @@ GET /api/products?pageIndex=0&pageSize=25&sortBy=NAME&sortDirection=ASC
 
 The controller passes it on as a `PageSpec`, so services don't depend on Spring MVC.
 
+### Sort direction is case-insensitive
+
+`sortDirection` accepts `asc`, `DESC`, `Desc` and so on, ignoring surrounding whitespace; a blank value counts as
+absent (ascending), and anything else is a 400. In a Spring Boot application this works out of the box: jpa-utils'
+auto-configuration registers a `SortDirectionConverter`, because Spring's own enum binding is case-sensitive and
+would reject the lowercase values most clients send.
+
+In a Spring MVC application without Spring Boot, register the converter yourself:
+
+```java
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        registry.addConverter(new SortDirectionConverter());
+    }
+}
+```
+
+To change its behavior, define your own `SortDirectionConverter` bean; the auto-configured one backs off.
+
 ### Different parameter names
 
 Bind your own names and build a `PageParams`:

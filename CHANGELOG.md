@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is checked against the entity type (Spring Data property-path rules, nested paths included), so a typo or a missing
   `id` fails at startup with `IllegalArgumentException` instead of a `PropertyReferenceException` on every request.
   Native queries that sort by column names opt out with `skipPropertyValidation()`
+- `sortDirection` binds case-insensitively (`asc`, `DESC`, ` Desc `): `SortDirectionConverter`, registered
+  automatically in Spring Boot servlet applications by `PagingWebAutoConfiguration` (plain Spring MVC apps register
+  it in a `WebMvcConfigurer`). Spring's enum binding is case-sensitive, so `?sortDirection=desc` used to be a 400
 - Stable paging: the tiebreaker makes the sort a total order, so rows can no longer repeat or vanish across pages
   when sort values tie (reproduced on PostgreSQL, MySQL and CockroachDB before the fix)
 - Security considerations documentation for search term length validation

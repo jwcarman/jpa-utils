@@ -3,6 +3,7 @@ package org.jwcarman.jpa.spring.web;
 import org.jwcarman.jpa.pagination.SortDirection;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PageParamsTest.TestController.class)
+@ImportAutoConfiguration(PagingWebAutoConfiguration.class)
 class PageParamsTest {
 
     @Autowired
@@ -94,6 +96,36 @@ class PageParamsTest {
         assertThat(captured).isNotNull();
         assertThat(captured.pageIndex()).isZero();
         assertThat(captured.pageSize()).isZero();
+    }
+
+    @Test
+    void shouldBindLowercaseSortDirection() throws Exception {
+        mockMvc.perform(get("/test").param("sortDirection", "desc"))
+                .andExpect(status().isOk());
+
+        assertThat(controller.getLastPageParams().sortDirection()).isEqualTo(SortDirection.DESC);
+    }
+
+    @Test
+    void shouldBindMixedCaseSortDirectionWithWhitespace() throws Exception {
+        mockMvc.perform(get("/test").param("sortDirection", " Asc "))
+                .andExpect(status().isOk());
+
+        assertThat(controller.getLastPageParams().sortDirection()).isEqualTo(SortDirection.ASC);
+    }
+
+    @Test
+    void shouldTreatBlankSortDirectionAsAbsent() throws Exception {
+        mockMvc.perform(get("/test").param("sortDirection", ""))
+                .andExpect(status().isOk());
+
+        assertThat(controller.getLastPageParams().sortDirection()).isNull();
+    }
+
+    @Test
+    void shouldRejectUnknownSortDirection() throws Exception {
+        mockMvc.perform(get("/test").param("sortDirection", "sideways"))
+                .andExpect(status().isBadRequest());
     }
 
     @Configuration
