@@ -12,12 +12,13 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
  * Utility class for building JPA Criteria API predicates based on fields marked with {@link Searchable}.
  *
  * <p>This utility automatically generates case-insensitive LIKE predicates for all String fields
- * or methods annotated with {@code @Searchable}, using OR logic to match across multiple fields.
+ * or methods annotated with {@code @Searchable}: every word of the search term must appear in at least one of them.
  * It handles SQL wildcard escaping and provides null-safe operation.</p>
  *
  * <h2>Key Features</h2>
@@ -25,7 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li><strong>Annotation-Driven:</strong> Automatically discovers {@code @Searchable} fields</li>
  *   <li><strong>Case-Insensitive:</strong> All searches use lowercase comparison</li>
  *   <li><strong>Wildcard Escaping:</strong> Automatically escapes {@code %}, {@code _}, and {@code \}</li>
- *   <li><strong>OR Logic:</strong> Matches if search term appears in ANY searchable field</li>
+ *   <li><strong>Word by Word:</strong> The term is split on whitespace; a row matches when every word appears in at
+ *       least one searchable field, in any order (at most {@value #MAX_SEARCH_WORDS} words are used)</li>
  *   <li><strong>Null-Safe:</strong> Returns all results when search term is null or blank</li>
  *   <li><strong>Type-Safe:</strong> Only processes String fields</li>
  * </ul>
@@ -161,7 +163,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <h2>Performance Considerations</h2>
  * <ul>
  *   <li><strong>Database Indexes:</strong> LIKE queries with leading wildcards ({@code %term%}) cannot use indexes efficiently</li>
- *   <li><strong>Field Count:</strong> More {@code @Searchable} fields = more OR conditions = slower queries</li>
+ *   <li><strong>Query Size:</strong> The predicate has one LIKE per word per {@code @Searchable} field</li>
  *   <li><strong>Full-Text Search:</strong> For large text fields or complex search requirements, consider database-specific full-text search</li>
  *   <li><strong>Pagination:</strong> Always use pagination to limit result sets</li>
  * </ul>
@@ -188,6 +190,13 @@ public final class Searchables {
      */
     private static final ConcurrentHashMap<Class<?>, List<String>> SEARCHABLE_ATTRIBUTES_CACHE = new ConcurrentHashMap<>();
 
+    /**
+     * The most words of a search term that are matched; any beyond are ignored, bounding the size of the query.
+     */
+    public static final int MAX_SEARCH_WORDS = 10;
+
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+
 // --------------------------- CONSTRUCTORS ---------------------------
 
     private Searchables() {
@@ -198,47 +207,68 @@ public final class Searchables {
     /**
      * Creates a JPA Criteria API predicate that searches all {@code @Searchable} String fields.
      *
-     * <p>This method inspects the entity's metamodel to find all String attributes marked with
-     * {@link Searchable}, then builds a predicate using OR logic with case-insensitive LIKE queries.</p>
+     * <p>The search term is split on whitespace into words (lowercased, duplicates dropped, at most
+     * {@value #MAX_SEARCH_WORDS}). A row matches when <em>every</em> word appears, case-insensitively, in at least one
+     * searchable field, so {@code "john smith"} finds a row with {@code firstName = "John"} and
+     * {@code lastName = "Smith"}, in either order. SQL wildcards in the words are escaped.</p>
      *
      * <p><strong>Behavior:</strong></p>
      * <ul>
      *   <li>If {@code searchTerm} is null or blank → returns {@code builder.conjunction()} (all results)</li>
      *   <li>If no {@code @Searchable} fields exist → returns {@code builder.conjunction()} (all results)</li>
-     *   <li>Otherwise → returns OR predicate matching any searchable field</li>
+     *   <li>Otherwise → an AND, over the words, of an OR over the searchable fields</li>
      * </ul>
      *
      * <p><strong>Search Pattern:</strong></p>
      * <pre>{@code
-     * // Input: "john"
-     * // Pattern: "%john%"
-     * // SQL: WHERE LOWER(firstName) LIKE '%john%' ESCAPE '\'
-     * //         OR LOWER(lastName) LIKE '%john%' ESCAPE '\'
-     * //         OR LOWER(email) LIKE '%john%' ESCAPE '\'
+     * // Input: "john smith"
+     * // SQL: WHERE (LOWER(firstName) LIKE '%john%' ESCAPE '\' OR LOWER(lastName) LIKE '%john%' ESCAPE '\')
+     * //        AND (LOWER(firstName) LIKE '%smith%' ESCAPE '\' OR LOWER(lastName) LIKE '%smith%' ESCAPE '\')
      * }</pre>
      *
      * @param searchTerm the search term to match (case-insensitive, wildcards escaped), may be null or blank
      * @param root       the query root representing the entity, must not be null
      * @param builder    the criteria builder for constructing predicates, must not be null
-     * @return a predicate matching the search term across all searchable fields, never null
+     * @return a predicate matching every word of the search term across the searchable fields, never null
      * @throws NullPointerException if {@code root} or {@code builder} is null
      */
     public static Predicate createSearchPredicate(String searchTerm, Root<?> root, CriteriaBuilder builder) {
-        if (searchTerm == null || searchTerm.isBlank()) {
+        final List<String> words = wordsOf(searchTerm);
+        if (words.isEmpty()) {
             return builder.conjunction(); // No filtering if searchTerm is empty/null
         }
 
-        final String pattern = "%" + sanitizeSearchTerm(searchTerm).toLowerCase(Locale.ROOT) + "%";
-
         final var attributeNames = getSearchableAttributeNames(root.getJavaType(), root.getModel());
-
         if (attributeNames.isEmpty()) {
             return builder.conjunction();
-        } else {
-            return builder.or(attributeNames.stream()
-                    .map(attributeName -> like(root, builder, attributeName, pattern))
-                    .toArray(Predicate[]::new));
         }
+
+        return builder.and(words.stream()
+                .map(word -> {
+                    final String pattern = "%" + sanitizeSearchTerm(word) + "%";
+                    return builder.or(attributeNames.stream()
+                            .map(attributeName -> like(root, builder, attributeName, pattern))
+                            .toArray(Predicate[]::new));
+                })
+                .toArray(Predicate[]::new));
+    }
+
+    /**
+     * Splits a search term into the words that are matched: lowercased, without duplicates, in order, at most
+     * {@value #MAX_SEARCH_WORDS}.
+     *
+     * @param searchTerm the search term, may be null or blank
+     * @return the words, empty for a null or blank term
+     */
+    static List<String> wordsOf(String searchTerm) {
+        if (searchTerm == null || searchTerm.isBlank()) {
+            return List.of();
+        }
+        return WHITESPACE.splitAsStream(searchTerm.strip())
+                .map(word -> word.toLowerCase(Locale.ROOT))
+                .distinct()
+                .limit(MAX_SEARCH_WORDS)
+                .toList();
     }
 
     /**

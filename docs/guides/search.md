@@ -42,20 +42,26 @@ public PageDto<ArticleDto> search(String term, PageSpec spec) {
 
 ## What a search matches
 
-For the term `spring boot`, the query matches rows where **any** searchable field contains the term:
+The term is split into words on whitespace, and a row matches when **every word** appears in **at least one**
+searchable field, in any order. For `john smith` against `firstName` and `lastName`:
 
 ```sql
-WHERE LOWER(title) LIKE '%spring boot%' ESCAPE '\'
-   OR LOWER(summary) LIKE '%spring boot%' ESCAPE '\'
+WHERE (LOWER(first_name) LIKE '%john%' ESCAPE '\' OR LOWER(last_name) LIKE '%john%' ESCAPE '\')
+  AND (LOWER(first_name) LIKE '%smith%' ESCAPE '\' OR LOWER(last_name) LIKE '%smith%' ESCAPE '\')
 ```
 
+So `john smith` and `smith john` both find John Smith, even though the words are in different columns, and
+`john brown` finds nobody unless someone matches both words.
+
 - **Case-insensitive**: both sides are lowercased.
-- **Substring**: the term may appear anywhere in the field.
-- **Literal**: `%`, `_` and `\` in the term are escaped, so `50%` matches the text "50%", not "50 and anything".
+- **Substring**: each word may appear anywhere in a field.
+- **Literal**: `%`, `_` and `\` in a word are escaped, so `50%` matches the text "50%", not "50 and anything".
+- **Bounded**: duplicate words count once, and only the first 10 words are used (`Searchables.MAX_SEARCH_WORDS`),
+  so a pasted paragraph can't build an enormous query.
 - **Absent terms match everything**: a `null` or blank term adds no condition.
 - **No searchable fields matches everything** too, and logs a warning once for that entity type.
 
-The term is bound as a parameter, never concatenated into SQL.
+The words are bound as parameters, never concatenated into SQL.
 
 ## Combining search with other conditions
 
@@ -74,7 +80,8 @@ The predicate works with plain Jakarta Persistence Criteria queries as well; it 
 
 ## Limits
 
-A leading-wildcard `LIKE` can't use an ordinary B-tree index, so every search scans the searchable columns. That is
+A leading-wildcard `LIKE` can't use an ordinary B-tree index, so every search scans the searchable columns, with one
+`LIKE` per word per searchable field. That is
 fine for modest tables. For large ones, consider a database full-text index (PostgreSQL `tsvector`, MySQL
 `FULLTEXT`) behind a custom query.
 

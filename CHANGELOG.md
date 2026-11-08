@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Every `Pageable` now ends with a unique tiebreaker** (default property `id`), and requests without `sortBy`
   are sorted by it instead of unsorted. Entities whose identifier is not named `id` must configure
   `cfg -> cfg.tiebreaker("theirId")` (or `noTiebreaker()`), otherwise queries fail with `PropertyReferenceException`
+- **Search matches word by word.** A search term is split on whitespace, and a row matches when every word appears
+  in at least one `@Searchable` field, in any order: `john smith` now finds first name John, last name Smith. Before,
+  the whole term had to appear in a single field. Results can only grow: anything that matched before still matches.
+  At most 10 words are used (`Searchables.MAX_SEARCH_WORDS`)
 - An out-of-range default page size is now rejected when the `Paginator` is built instead of being clamped
 - The default maximum page size is now 100 (was 1000); raise it per paginator with `cfg -> cfg.maxPageSize(n)`
 - A blank `sortBy` (e.g. `?sortBy=`) is treated as absent, so the default sort applies, instead of raising

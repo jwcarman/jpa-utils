@@ -127,6 +127,34 @@ public abstract class DatabaseIT {
         assertThat(page.getContent().get(0).getLastName()).isEqualTo(expectedLastName);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "alice anderson,            Anderson",
+            "anderson alice,            Anderson",
+            "ALICE   Anderson,          Anderson",
+            "alice example.com,         Anderson",
+            "test% example,             WithPercent",
+            "test_ withunderscore,      WithUnderscore"
+    })
+    void matches_every_word_across_fields_in_any_order(String searchTerm, String expectedLastName) {
+        Page<TestPerson> page = personRepository.search(searchTerm, Pageable.unpaged());
+
+        assertThat(page.getContent()).extracting(TestPerson::getLastName).containsExactly(expectedLastName);
+    }
+
+    @Test
+    void excludes_rows_missing_any_word() {
+        assertThat(personRepository.search("alice brown", Pageable.unpaged()).getTotalElements()).isZero();
+    }
+
+    @Test
+    void ignores_words_beyond_the_maximum() {
+        // Ten words that all occur in Alice Anderson's fields, then one that occurs nowhere.
+        Page<TestPerson> page = personRepository.search("alice anderson a l i c e n d r zzz", Pageable.unpaged());
+
+        assertThat(page.getContent()).extracting(TestPerson::getFirstName).contains("Alice");
+    }
+
     @Test
     void shouldSearchWithPartialMatch() {
         Page<TestPerson> page = personRepository.search("ar", Pageable.unpaged());
