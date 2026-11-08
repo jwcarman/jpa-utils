@@ -46,8 +46,9 @@ import java.util.function.Function;
  * <h2>Sort resolution</h2>
  * <ol>
  *   <li>{@link PageSpec#sortBy()} given: the matching enum constant, or {@link UnknownSortByValueException} if
- *       none matches (case-sensitive).</li>
- *   <li>{@code sortBy} absent and a {@linkplain Config#defaultSort(Enum) default sort} configured: the default.</li>
+ *       none matches. Surrounding whitespace is ignored; matching is case-sensitive.</li>
+ *   <li>{@code sortBy} absent or blank, and a {@linkplain Config#defaultSort(Enum) default sort} configured: the
+ *       default.</li>
  *   <li>Otherwise only the tiebreaker (or unsorted, when the tiebreaker is disabled).</li>
  * </ol>
  * <p>The requested {@link PageSpec#sortDirection()} applies to the sort property (ascending when absent); the
@@ -76,7 +77,7 @@ public final class Paginator {
     public static final int DEFAULT_PAGE_SIZE = 20;
 
     /** The largest page size a request can produce, unless configured otherwise. */
-    public static final int DEFAULT_MAX_PAGE_SIZE = 1000;
+    public static final int DEFAULT_MAX_PAGE_SIZE = 100;
 
     /** The tiebreaker property used unless configured otherwise: {@code BaseEntity}'s identifier. */
     public static final String DEFAULT_TIEBREAKER = "id";
@@ -246,6 +247,8 @@ public final class Paginator {
 
     private Sort sortOf(String sortBy, SortDirection sortDirection) {
         Sort sort = Optional.ofNullable(sortBy)
+                .map(String::strip)
+                .filter(value -> !value.isEmpty())
                 .map(sortResolver)
                 .or(() -> Optional.ofNullable(defaultSort))
                 .map(provider -> Sort.by(directionOf(sortDirection), provider.getSortProperty()))
@@ -311,7 +314,7 @@ public final class Paginator {
         }
 
         /**
-         * Sets the sort used when a request has no {@code sortBy}. The request's direction still applies.
+         * Sets the sort used when a request has no (or a blank) {@code sortBy}. The request's direction still applies.
          *
          * @param defaultSort the default sort
          * @return this config

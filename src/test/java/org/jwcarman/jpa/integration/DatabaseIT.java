@@ -168,7 +168,7 @@ public abstract class DatabaseIT {
     void shouldRespectMaxPageSize() {
         Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 5000, null, null));
 
-        // Should be clamped to MAX_PAGE_SIZE (1000)
+        // Should be clamped to DEFAULT_MAX_PAGE_SIZE (100)
         assertThat(pageable.getPageSize()).isEqualTo(Paginator.DEFAULT_MAX_PAGE_SIZE);
     }
 

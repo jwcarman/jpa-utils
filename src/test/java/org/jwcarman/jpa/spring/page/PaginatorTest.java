@@ -89,6 +89,23 @@ class PaginatorTest {
         }
 
         @Test
+        void ignores_whitespace_around_sort_by() {
+            Pageable pageable = DEFAULTS.pageableOf(spec(0, 10, "  LAST_NAME ", SortDirection.DESC));
+
+            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), asc("id"));
+        }
+
+        @Test
+        void treats_an_empty_sort_by_as_absent() {
+            assertThat(ordersOf(DEFAULTS.pageableOf(spec(0, 10, "", null)))).containsExactly(asc("id"));
+        }
+
+        @Test
+        void treats_a_blank_sort_by_as_absent() {
+            assertThat(ordersOf(DEFAULTS.pageableOf(spec(0, 10, " \t ", null)))).containsExactly(asc("id"));
+        }
+
+        @Test
         void matches_sort_by_values_case_sensitively() {
             PageSpec spec = spec(0, 10, "first_name", SortDirection.ASC);
 
@@ -166,6 +183,13 @@ class PaginatorTest {
             Pageable pageable = paginator.pageableOf(spec(0, 10, null, null));
 
             assertThat(ordersOf(pageable)).containsExactly(asc("lastName"), asc("id"));
+        }
+
+        @Test
+        void is_used_when_sort_by_is_blank() {
+            Pageable pageable = paginator.pageableOf(spec(0, 10, "  ", SortDirection.DESC));
+
+            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), asc("id"));
         }
 
         @Test
@@ -253,6 +277,19 @@ class PaginatorTest {
         void allows_exactly_the_maximum() {
             assertThat(DEFAULTS.pageableOf(spec(0, DEFAULT_MAX_PAGE_SIZE, null, null)).getPageSize())
                     .isEqualTo(DEFAULT_MAX_PAGE_SIZE);
+        }
+
+        @Test
+        void defaults_the_maximum_to_one_hundred() {
+            assertThat(DEFAULT_MAX_PAGE_SIZE).isEqualTo(100);
+            assertThat(DEFAULTS.pageableOf(spec(0, 101, null, null)).getPageSize()).isEqualTo(100);
+        }
+
+        @Test
+        void allows_a_raised_maximum() {
+            Paginator paginator = Paginator.of(PersonSort.class, cfg -> cfg.maxPageSize(1000));
+
+            assertThat(paginator.pageableOf(spec(0, 1000, null, null)).getPageSize()).isEqualTo(1000);
         }
 
         @Test

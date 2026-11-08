@@ -412,9 +412,9 @@ PageDto<ProductDto> dto = PAGINATOR.pageDtoOf(page, ProductDto::fromEntity);
 
 ```java
 private static final Paginator PAGINATOR = Paginator.of(ProductSort.class, cfg -> cfg
-        .defaultSort(ProductSort.NAME)   // used when the request has no sortBy
+        .defaultSort(ProductSort.NAME)   // used when the request has no (or a blank) sortBy
         .defaultPageSize(25)             // default: 20
-        .maxPageSize(100)                // default: 1000; larger requests are clamped
+        .maxPageSize(500)                // default: 100; larger requests are clamped
         .tiebreaker("sku"));             // default: "id"
 ```
 
@@ -630,7 +630,7 @@ Spring Boot will automatically return HTTP 400 Bad Request when the validation f
 
 ### Page Size Limits
 
-`Paginator` clamps requested page sizes to its maximum (`Paginator.DEFAULT_MAX_PAGE_SIZE`, 1000, unless configured) to prevent memory exhaustion attacks. Lower it per paginator with `cfg -> cfg.maxPageSize(100)`, or enforce limits at the controller level:
+`Paginator` clamps requested page sizes to its maximum (`Paginator.DEFAULT_MAX_PAGE_SIZE`, 100, unless configured) to bound the work a single request can cause. Raise or lower it per paginator with `cfg -> cfg.maxPageSize(n)`, or enforce limits at the controller level:
 
 ```java
 @GetMapping

@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are sorted by it instead of unsorted. Entities whose identifier is not named `id` must configure
   `cfg -> cfg.tiebreaker("theirId")` (or `noTiebreaker()`), otherwise queries fail with `PropertyReferenceException`
 - An out-of-range default page size is now rejected when the `Paginator` is built instead of being clamped
+- The default maximum page size is now 100 (was 1000); raise it per paginator with `cfg -> cfg.maxPageSize(n)`
+- A blank `sortBy` (e.g. `?sortBy=`) is treated as absent, so the default sort applies, instead of raising
+  `UnknownSortByValueException`; surrounding whitespace is ignored
 
 ### Added
 - `Paginator`: configured once per sort enum (`Paginator.of(X.class, cfg -> ...)`), immutable and thread-safe
