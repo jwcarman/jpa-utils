@@ -1,6 +1,7 @@
 package org.jwcarman.jpa.entity;
 
 import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
@@ -56,6 +57,12 @@ public abstract class BaseEntity {
 // ------------------------------ FIELDS ------------------------------
 
     /**
+     * The UUID v7 generator for every entity. JUG generators are thread-safe, and one shared instance keeps
+     * identifiers strictly increasing within a millisecond, which a generator per entity would not.
+     */
+    private static final TimeBasedEpochGenerator ID_GENERATOR = Generators.timeBasedEpochGenerator();
+
+    /**
      * The unique identifier for the entity.
      * <p>
      * This is a universally unique identifier (UUID) that is assigned at the time of entity creation
@@ -84,10 +91,12 @@ public abstract class BaseEntity {
      * Default constructor that assigns a time-based UUID to the entity.
      * <p>
      * This constructor is required for JPA and ensures that an entity always has a stable identifier upon instantiation.
+     * Identifiers come from one shared generator, so they are strictly increasing even for entities created within the
+     * same millisecond.
      * </p>
      */
     protected BaseEntity() {
-        this(Generators.timeBasedEpochGenerator().generate());
+        this(ID_GENERATOR.generate());
     }
 
     /**

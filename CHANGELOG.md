@@ -50,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   migrating to 0.1.0; each release's Javadoc under `/api/`. The README is now a short overview that links to it
 
 ### Fixed
+- `BaseEntity` ids are strictly increasing within a JVM: one shared UUID v7 generator instead of a new generator per
+  entity, which ordered ids only to the millisecond
 - `slf4j-api` is now a direct dependency. `Searchables` logs through SLF4J, which previously arrived only through
   the optional Spring Data dependency, so search without Spring failed with `NoClassDefFoundError`
 - `BaseEntity.equals`/`hashCode` with Hibernate lazy proxies: they were `final` and read the `id` field, which a

@@ -11,6 +11,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class BaseEntityTest {
     @Test
+    void ids_from_consecutive_constructions_are_strictly_increasing() {
+        // Thousands of entities are created within the same few milliseconds. A shared v7 generator orders ids
+        // within a millisecond; a generator per entity would only order them to the millisecond.
+        String previous = new Person().getId().toString();
+        for (int i = 0; i < 10_000; i++) {
+            String next = new Person().getId().toString();
+            assertThat(next).isGreaterThan(previous);
+            previous = next;
+        }
+    }
+
+    @Test
+    void ids_are_version_7() {
+        assertThat(new Person().getId().version()).isEqualTo(7);
+    }
+
+    @Test
     void entityShouldEqualItself() {
         final var entity = new Person("Joe", "Shmoe");
         assertThat(entity).isEqualTo(entity);

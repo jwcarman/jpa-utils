@@ -35,6 +35,8 @@ the insert.
 
 UUID v7 values start with a timestamp, so new rows insert near the end of the primary-key index instead of at
 random points, which avoids the index fragmentation random (v4) UUIDs cause.
+Every entity draws from one shared generator, so ids are strictly increasing within a JVM, even for entities
+created in the same millisecond.
 
 Spring Data still knows a new entity from an existing one: an entity with a wrapper-typed `@Version` is new while
 its version is `null`, so `save` persists rather than merges.
