@@ -28,7 +28,7 @@
         <junit.version>6.0.3</junit.version>
         <logback.version>1.5.38</logback.version>
         <lombok.version>1.18.48</lombok.version>
-        <mariadb-driver.version>3.5.10</mariadb-driver.version>
+        <mariadb-driver.version>3.5.11</mariadb-driver.version>
         <mockito.version>5.23.0</mockito.version>
         <mysql-driver.version>9.7.0</mysql-driver.version>
         <oracle-driver.version>23.26.3.0.0</oracle-driver.version>
