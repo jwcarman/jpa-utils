@@ -97,8 +97,8 @@ don't each discover them in production.
 
     ---
 
-    Mark `String` fields `@Searchable`; `SearchableRepository.search(term, pageable)` matches them
-    case-insensitively with SQL wildcards escaped. See [Search](guides/search.md).
+    Mark `String` fields `@Searchable`; `SearchableRepository.search(term, pageable)` matches every word of the
+    term across them, in any order, so `john smith` finds John Smith. See [Search](guides/search.md).
 
 -   **A framework-free web contract**
 

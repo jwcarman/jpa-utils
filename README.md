@@ -23,7 +23,8 @@ Stable paging, UUID v7 entities, and annotation-driven search for
   built, not on every request.
 - **Entities with stable identity.** `BaseEntity` assigns a UUID v7 at construction, adds optimistic locking, and has
   an `equals`/`hashCode` that holds for lazy proxies.
-- **Search by annotation.** Mark fields `@Searchable` for case-insensitive search, with SQL wildcards escaped.
+- **Search by annotation.** Mark fields `@Searchable`; a search matches word by word across them, case-insensitively,
+  so `john smith` finds John Smith.
 - **A framework-free web contract.** `PageSpec` in, `PageDto` out; `PageParams` binds them in Spring MVC.
 
 ## Requirements
