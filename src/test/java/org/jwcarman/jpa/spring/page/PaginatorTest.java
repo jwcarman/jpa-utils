@@ -433,6 +433,13 @@ class PaginatorTest {
         }
 
         @Test
+        void rejects_a_null_sort_property() {
+            assertThatThrownBy(() -> Paginator.of(Person.class, NullSort.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("NullSort.NOTHING has no sort property");
+        }
+
+        @Test
         void rejects_a_blank_sort_property() {
             assertThatThrownBy(() -> Paginator.of(Person.class, BlankSort.class))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -641,6 +648,15 @@ class PaginatorTest {
         @Override
         public String getSortProperty() {
             return "name";
+        }
+    }
+
+    enum NullSort implements SortPropertyProvider {
+        NOTHING;
+
+        @Override
+        public String getSortProperty() {
+            return null;
         }
     }
 

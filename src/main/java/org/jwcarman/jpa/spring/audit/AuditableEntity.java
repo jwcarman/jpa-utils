@@ -116,4 +116,32 @@ public abstract class AuditableEntity extends BaseEntity {
     protected AuditableEntity(UUID id) {
         super(id);
     }
+
+// ------------------------ CANONICAL METHODS ------------------------
+
+    /**
+     * Determines equality by identifier only, exactly as {@link BaseEntity#equals(Object)} does.
+     * <p>
+     * The audit fields are deliberately excluded: they describe when and by whom the row was written, not which
+     * entity it is, and they change on every update. Including them would make an entity unequal to itself after a
+     * save, and unequal to its own lazy proxy.
+     * </p>
+     *
+     * @param o the object to compare against
+     * @return {@code true} if both entities have the same UUID, {@code false} otherwise
+     */
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
+    /**
+     * Computes a hash code from the identifier only, consistent with {@link #equals(Object)}.
+     *
+     * @return a stable hash code based on the entity's UUID
+     */
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }
