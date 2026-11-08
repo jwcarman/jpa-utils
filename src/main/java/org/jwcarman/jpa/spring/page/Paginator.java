@@ -179,7 +179,7 @@ public final class Paginator {
     private static <S extends Enum<S> & SortPropertyProvider> S resolveSortEnum(String sortBy, Class<S> sortEnumClass) {
         try {
             return Enum.valueOf(sortEnumClass, sortBy);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException _) {
             final String[] expectedValues = Arrays.stream(sortEnumClass.getEnumConstants())
                     .map(Enum::name)
                     .toArray(String[]::new);

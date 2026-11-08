@@ -45,7 +45,8 @@ import static java.util.Objects.requireNonNull;
  *     <li>Automatically assigns a time-based UUID upon creation.</li>
  *     <li>Enforces a non-null ID using {@link java.util.Objects#requireNonNull(Object, String)}.</li>
  *     <li>Provides a version field for optimistic locking.</li>
- *     <li>Implements a final {@code equals()} and {@code hashCode()} based on the unique identifier.</li>
+ *     <li>Implements {@code equals()} and {@code hashCode()} based on the unique identifier, read through
+ *     {@code getId()} so Hibernate lazy proxies compare equal to the loaded entity.</li>
  *     <li>Does not include a {@code toString()} method to allow users full control over string representations.</li>
  * </ul>
  */
@@ -113,14 +114,21 @@ public abstract class BaseEntity {
      * is effectively impossible and represents a design error if it occurs.
      * </p>
      *
+     * <p>
+     * The identifier is read through {@code getId()}, never the field, on both sides. A Hibernate lazy proxy is a
+     * generated subclass whose own fields are not the entity's state; its {@code getId()} returns the real
+     * identifier without loading the entity. For the same reason this method is not {@code final} (a proxy could
+     * not intercept it); subclasses should not override it.
+     * </p>
+     *
      * @param o the object to compare against
      * @return {@code true} if both entities have the same UUID, {@code false} otherwise
      */
     @Override
-    public final boolean equals(Object o) {
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof BaseEntity that)) return false;
-        return Objects.equals(id, that.id);
+        return Objects.equals(getId(), that.getId());
     }
 
     /**
@@ -133,8 +141,8 @@ public abstract class BaseEntity {
      * @return a stable hash code based on the entity's UUID, or 0 if ID is null
      */
     @Override
-    public final int hashCode() {
-        return Objects.hashCode(id);
+    public int hashCode() {
+        return Objects.hashCode(getId());
     }
 
 }

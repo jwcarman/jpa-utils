@@ -1,5 +1,7 @@
 package org.jwcarman.jpa.integration;
 
+import jakarta.persistence.EntityManager;
+import org.hibernate.Hibernate;
 import org.jwcarman.jpa.pagination.PageDto;
 import org.jwcarman.jpa.pagination.PageSpec;
 import org.jwcarman.jpa.pagination.SortDirection;
@@ -47,6 +49,9 @@ public abstract class DatabaseIT {
 
     @Autowired
     protected TestPersonRepository personRepository;
+
+    @Autowired
+    private EntityManager entityManager;
 
     @BeforeEach
     void setUp() {
@@ -232,6 +237,20 @@ public abstract class DatabaseIT {
         }
 
         assertThat(seen).hasSize(30).doesNotHaveDuplicates().isSorted();
+    }
+
+    @Test
+    void lazy_proxy_equals_and_hashes_like_the_loaded_entity() {
+        TestPerson saved = personRepository.saveAndFlush(new TestPerson("Proxy", "Person", "proxy@example.com"));
+        UUID id = saved.getId();
+        entityManager.clear();
+
+        TestPerson proxy = entityManager.getReference(TestPerson.class, id);
+        assertThat(Hibernate.isInitialized(proxy)).isFalse();
+
+        assertThat(proxy).isEqualTo(saved);
+        assertThat(saved).isEqualTo(proxy);
+        assertThat(proxy).hasSameHashCodeAs(saved);
     }
 
     record TestPageSpec(

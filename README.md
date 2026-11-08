@@ -165,7 +165,7 @@ GET /api/persons?query=john&pageIndex=0&pageSize=20&sortBy=LAST_NAME&sortDirecti
 - **UUID v7 Identifiers**: Time-based epoch UUIDs for better database locality
 - **Stable IDs**: Generated at construction time, before persistence
 - **Optimistic Locking**: Built-in `@Version` field
-- **Final equals/hashCode**: Based on UUID for stable behavior
+- **Proxy-safe equals/hashCode**: Based on the UUID, read through `getId()` so Hibernate lazy proxies equal the loaded entity
 
 #### Usage
 

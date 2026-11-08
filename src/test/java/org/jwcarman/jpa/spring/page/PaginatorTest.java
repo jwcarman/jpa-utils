@@ -156,7 +156,7 @@ class PaginatorTest {
 
         @Test
         void rejects_an_empty_property_list() {
-            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, cfg -> cfg.tiebreaker()))
+            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, Paginator.Config::tiebreaker))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("noTiebreaker()");
         }
@@ -560,32 +560,35 @@ class PaginatorTest {
         }
     }
 
+    // Model types for property-path validation. Their fields are never read; they exist so Spring Data's
+    // PropertyPath has properties to resolve (inherited, nested and missing ones), like a JPA entity's fields.
+
     static class Person {
-        private UUID id;
-        private String firstName;
-        private String lastName;
+        UUID id;
+        String firstName;
+        String lastName;
     }
 
     static class Member extends Person {
-        private UUID identityId;
+        UUID identityId;
     }
 
     static class LineItem extends Person {
-        private UUID orderId;
-        private int lineNo;
+        UUID orderId;
+        int lineNo;
     }
 
     static class Address {
-        private String city;
+        String city;
     }
 
     static class Customer {
-        private UUID id;
-        private Address address;
+        UUID id;
+        Address address;
     }
 
     static class NoIdView {
-        private String name;
+        String name;
     }
 
     enum CustomerSort implements SortPropertyProvider {

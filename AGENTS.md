@@ -53,7 +53,7 @@ mvn -Pci verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.p
 
 **`org.jwcarman.jpa.entity`**
 - `BaseEntity`: MappedSuperclass providing UUID-based primary keys (using time-based epoch UUID v7 generator) and version field for optimistic locking
-- Entities extending BaseEntity get stable identifiers at construction time and final equals/hashCode based on UUID
+- Entities extending BaseEntity get stable identifiers at construction time and equals/hashCode based on the UUID, read through getId() so lazy proxies compare equal
 
 **`org.jwcarman.jpa.pagination`**
 - Framework-agnostic pagination contracts

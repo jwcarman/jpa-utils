@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive test coverage for `defaultPageSize` edge cases
 
 ### Fixed
+- `BaseEntity.equals`/`hashCode` with Hibernate lazy proxies: they were `final` and read the `id` field, which a
+  proxy (a generated subclass) does not hold, so `getReference(...)` proxies were not equal to the loaded entity and
+  hashed differently. They now read `getId()` and are no longer `final`; subclasses should still not override them
 - `defaultPageSize` parameter not being clamped when `spec` is null
 - Inconsistent page size validation between code paths
 
