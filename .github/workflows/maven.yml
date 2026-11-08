@@ -23,16 +23,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v5
+      uses: actions/checkout@v7
       with:
         fetch-depth: 0
-    - name: Set up JDK 21
-      uses: actions/setup-java@v5
+
+    - name: Set up JDK 25
+      uses: actions/setup-java@v6
       with:
         java-version: '25'
         distribution: 'liberica'
         cache: maven
+
     - name: Build with Maven
       env:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      run: mvn -Pci -B verify sonar:sonar
+      # Dependabot-triggered workflows cannot see repository secrets, so the SonarCloud goal only
+      # runs when a token is present.
+      #
+      # And the build WAITS on the gate. Without that, this job goes green while the gate goes
+      # red and the only way to find out is to visit the website.
+      run: |
+        if [ -n "$SONAR_TOKEN" ]; then
+          ./mvnw -Pci -B verify sonar:sonar -Dsonar.qualitygate.wait=true
+        else
+          ./mvnw -Pci -B verify
+        fi

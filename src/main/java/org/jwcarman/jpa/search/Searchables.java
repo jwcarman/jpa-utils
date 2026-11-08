@@ -5,7 +5,6 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.SingularAttribute;
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
@@ -178,9 +177,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see Searchable
  * @see org.jwcarman.jpa.spring.search.SearchableRepository
  */
-@UtilityClass
 @Slf4j
-public class Searchables {
+public final class Searchables {
 
 // -------------------------- STATIC FIELDS --------------------------
 
@@ -189,6 +187,11 @@ public class Searchables {
      * Key: Entity Class, Value: List of searchable String attribute names
      */
     private static final ConcurrentHashMap<Class<?>, List<String>> SEARCHABLE_ATTRIBUTES_CACHE = new ConcurrentHashMap<>();
+
+// --------------------------- CONSTRUCTORS ---------------------------
+
+    private Searchables() {
+    }
 
 // -------------------------- STATIC METHODS --------------------------
 
