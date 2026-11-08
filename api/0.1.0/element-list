@@ -1,0 +1,7 @@
+org.jwcarman.jpa.entity
+org.jwcarman.jpa.pagination
+org.jwcarman.jpa.search
+org.jwcarman.jpa.spring.audit
+org.jwcarman.jpa.spring.page
+org.jwcarman.jpa.spring.search
+org.jwcarman.jpa.spring.web
