@@ -84,28 +84,27 @@ package org.jwcarman.jpa.pagination;
  * }
  * }</pre>
  *
- * <h3>Integration with Pageables</h3>
+ * <h3>Integration with Paginator</h3>
  * <pre>{@code
  * @Service
  * public class PersonService {
+ *
+ *     private static final Paginator PAGINATOR = Paginator.of(PersonSort.class);
  *
  *     @Autowired
  *     private PersonRepository personRepository;
  *
  *     public PageDto<PersonDto> findAll(PageSpec pageSpec) {
- *         // Pageables automatically resolves sort field string to PersonSort enum
- *         // Then calls getSortProperty() to get the actual JPA property path
- *         Pageable pageable = Pageables.pageableOf(pageSpec, PersonSort.class);
- *
- *         Page<Person> page = personRepository.findAll(pageable);
- *         return Pages.pageDtoOf(page.map(PersonDto::fromEntity));
+ *         // Paginator resolves the sort field string to PersonSort,
+ *         // then calls getSortProperty() to get the actual JPA property path
+ *         return PAGINATOR.paginate(pageSpec, personRepository::findAll, PersonDto::fromEntity);
  *     }
  * }
  *
  * // When user requests: ?sortBy=LAST_NAME
- * // 1. Pageables resolves "LAST_NAME" to PersonSort.LAST_NAME
+ * // 1. Paginator resolves "LAST_NAME" to PersonSort.LAST_NAME
  * // 2. Calls PersonSort.LAST_NAME.getSortProperty() → returns "lastName"
- * // 3. Creates Sort.by(Direction.ASC, "lastName")
+ * // 3. Creates Sort.by(Direction.ASC, "lastName"), then appends the "id" tiebreaker
  * }</pre>
  *
  * <h3>Using with Records (Compact Syntax)</h3>
@@ -138,7 +137,7 @@ package org.jwcarman.jpa.pagination;
  * </ul>
  *
  * @see PageSpec
- * @see org.jwcarman.jpa.spring.page.Pageables
+ * @see org.jwcarman.jpa.spring.page.Paginator
  * @see SortDirection
  */
 @FunctionalInterface

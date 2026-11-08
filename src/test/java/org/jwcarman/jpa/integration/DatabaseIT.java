@@ -1,8 +1,9 @@
 package org.jwcarman.jpa.integration;
 
+import org.jwcarman.jpa.pagination.PageDto;
 import org.jwcarman.jpa.pagination.PageSpec;
 import org.jwcarman.jpa.pagination.SortDirection;
-import org.jwcarman.jpa.spring.page.Pageables;
+import org.jwcarman.jpa.spring.page.Paginator;
 import org.jwcarman.jpa.spring.search.SearchableRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,10 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ContextConfiguration;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,6 +42,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = {TestConfig.class})
 public abstract class DatabaseIT {
+
+    private static final Paginator PAGINATOR = Paginator.of(TestPersonSort.class);
 
     @Autowired
     protected TestPersonRepository personRepository;
@@ -64,10 +71,7 @@ public abstract class DatabaseIT {
 
     @Test
     void shouldPaginateResults() {
-        Pageable pageable = Pageables.pageableOf(
-                new TestPageSpec(0, 5, null, null),
-                TestPersonSort.class
-        );
+        Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 5, null, null));
 
         Page<TestPerson> page = personRepository.findAll(pageable);
 
@@ -80,10 +84,7 @@ public abstract class DatabaseIT {
 
     @Test
     void shouldSortByFirstNameAscending() {
-        Pageable pageable = Pageables.pageableOf(
-                new TestPageSpec(0, 20, "FIRST_NAME", SortDirection.ASC),
-                TestPersonSort.class
-        );
+        Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 20, "FIRST_NAME", SortDirection.ASC));
 
         Page<TestPerson> page = personRepository.findAll(pageable);
 
@@ -94,10 +95,7 @@ public abstract class DatabaseIT {
 
     @Test
     void shouldSortByLastNameDescending() {
-        Pageable pageable = Pageables.pageableOf(
-                new TestPageSpec(0, 20, "LAST_NAME", SortDirection.DESC),
-                TestPersonSort.class
-        );
+        Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 20, "LAST_NAME", SortDirection.DESC));
 
         Page<TestPerson> page = personRepository.findAll(pageable);
 
@@ -134,10 +132,7 @@ public abstract class DatabaseIT {
 
     @Test
     void shouldCombineSearchAndPagination() {
-        Pageable pageable = Pageables.pageableOf(
-                new TestPageSpec(0, 5, "FIRST_NAME", SortDirection.ASC),
-                TestPersonSort.class
-        );
+        Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 5, "FIRST_NAME", SortDirection.ASC));
 
         Page<TestPerson> page = personRepository.search("e", pageable);
 
@@ -171,32 +166,23 @@ public abstract class DatabaseIT {
 
     @Test
     void shouldRespectMaxPageSize() {
-        Pageable pageable = Pageables.pageableOf(
-                new TestPageSpec(0, 5000, null, null),
-                TestPersonSort.class
-        );
+        Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 5000, null, null));
 
         // Should be clamped to MAX_PAGE_SIZE (1000)
-        assertThat(pageable.getPageSize()).isEqualTo(Pageables.MAX_PAGE_SIZE);
+        assertThat(pageable.getPageSize()).isEqualTo(Paginator.DEFAULT_MAX_PAGE_SIZE);
     }
 
     @Test
     void shouldHandleMultiplePageNavigation() {
         // First page
-        Pageable firstPage = Pageables.pageableOf(
-                new TestPageSpec(0, 3, "FIRST_NAME", SortDirection.ASC),
-                TestPersonSort.class
-        );
+        Pageable firstPage = PAGINATOR.pageableOf(new TestPageSpec(0, 3, "FIRST_NAME", SortDirection.ASC));
         Page<TestPerson> page1 = personRepository.findAll(firstPage);
 
         assertThat(page1.getContent()).hasSize(3);
         assertThat(page1.hasNext()).isTrue();
 
         // Second page
-        Pageable secondPage = Pageables.pageableOf(
-                new TestPageSpec(1, 3, "FIRST_NAME", SortDirection.ASC),
-                TestPersonSort.class
-        );
+        Pageable secondPage = PAGINATOR.pageableOf(new TestPageSpec(1, 3, "FIRST_NAME", SortDirection.ASC));
         Page<TestPerson> page2 = personRepository.findAll(secondPage);
 
         assertThat(page2.getContent()).hasSize(3);
@@ -204,6 +190,48 @@ public abstract class DatabaseIT {
 
         // Verify no overlap
         assertThat(page1.getContent()).doesNotContainAnyElementsOf(page2.getContent());
+    }
+
+    @Test
+    void pages_through_tied_sort_values_without_repeats_or_gaps() {
+        personRepository.deleteAll();
+        for (int i = 0; i < 100; i++) {
+            personRepository.save(new TestPerson("Same", "Tied", "person" + i + "@example.com"));
+        }
+        personRepository.flush();
+
+        List<UUID> seen = new ArrayList<>();
+        for (int pageIndex = 0; pageIndex < 20; pageIndex++) {
+            PageDto<UUID> page = PAGINATOR.paginate(
+                    new TestPageSpec(pageIndex, 5, "LAST_NAME", SortDirection.ASC),
+                    personRepository::findAll,
+                    TestPerson::getId
+            );
+            seen.addAll(page.data());
+        }
+
+        assertThat(seen).hasSize(100).doesNotHaveDuplicates();
+    }
+
+    @Test
+    void pages_through_tied_sort_values_using_a_configured_tiebreaker() {
+        personRepository.deleteAll();
+        for (int i = 0; i < 30; i++) {
+            personRepository.save(new TestPerson("Same", "Tied", String.format("person%02d@example.com", i)));
+        }
+        personRepository.flush();
+        Paginator byEmail = Paginator.of(TestPersonSort.class, cfg -> cfg.tiebreaker("email"));
+
+        List<String> seen = new ArrayList<>();
+        for (int pageIndex = 0; pageIndex < 6; pageIndex++) {
+            seen.addAll(byEmail.paginate(
+                    new TestPageSpec(pageIndex, 5, "LAST_NAME", SortDirection.DESC),
+                    personRepository::findAll,
+                    TestPerson::getEmail
+            ).data());
+        }
+
+        assertThat(seen).hasSize(30).doesNotHaveDuplicates().isSorted();
     }
 
     record TestPageSpec(

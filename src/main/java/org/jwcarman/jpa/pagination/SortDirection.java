@@ -5,7 +5,7 @@ package org.jwcarman.jpa.pagination;
  *
  * <p>This enum provides a framework-agnostic way to specify sort order in pagination requests,
  * which is then translated to framework-specific sort directions (e.g., Spring Data's {@code Sort.Direction})
- * by utility classes like {@code Pageables}.</p>
+ * by {@code Paginator}.</p>
  *
  * <h2>Usage Examples</h2>
  *
@@ -32,11 +32,11 @@ package org.jwcarman.jpa.pagination;
  * @Service
  * public class ProductService {
  *
+ *     private static final Paginator PAGINATOR = Paginator.of(ProductSort.class);
+ *
  *     public PageDto<ProductDto> findAll(PageSpec pageSpec) {
- *         // Pageables converts SortDirection to Spring's Sort.Direction
- *         Pageable pageable = Pageables.pageableOf(pageSpec, ProductSort.class);
- *         Page<Product> page = productRepository.findAll(pageable);
- *         return Pages.pageDtoOf(page.map(ProductDto::fromEntity));
+ *         // Paginator converts SortDirection to Spring's Sort.Direction
+ *         return PAGINATOR.paginate(pageSpec, productRepository::findAll, ProductDto::fromEntity);
  *     }
  * }
  * }</pre>
@@ -51,7 +51,7 @@ package org.jwcarman.jpa.pagination;
  * }</pre>
  *
  * @see PageSpec#sortDirection()
- * @see org.jwcarman.jpa.spring.page.Pageables
+ * @see org.jwcarman.jpa.spring.page.Paginator
  */
 public enum SortDirection {
     /**

@@ -18,11 +18,11 @@ package org.jwcarman.jpa.pagination;
  *
  * <h2>Nullability Contract</h2>
  * <p>All methods in this interface may return {@code null}, which is handled gracefully by utilities
- * like {@code Pageables}:</p>
+ * like {@code Paginator}:</p>
  * <ul>
  *   <li>{@code pageIndex() == null} → defaults to first page (0)</li>
  *   <li>{@code pageSize() == null} → defaults to configured default (typically 20)</li>
- *   <li>{@code sortBy() == null} → results are unsorted</li>
+ *   <li>{@code sortBy() == null} → the configured default sort, if any, then the unique tiebreaker</li>
  *   <li>{@code sortDirection() == null} → defaults to ascending when sortBy is present</li>
  * </ul>
  *
@@ -153,26 +153,20 @@ package org.jwcarman.jpa.pagination;
  * @Service
  * public class PersonService {
  *
+ *     private static final Paginator PAGINATOR = Paginator.of(PersonSort.class);
+ *
  *     @Autowired
  *     private PersonRepository personRepository;
  *
  *     public PageDto<PersonDto> findAll(PageSpec pageSpec) {
- *         // Pageables automatically resolves sort field string to PersonSort enum
- *         Pageable pageable = Pageables.pageableOf(pageSpec, PersonSort.class);
- *
- *         // Query repository
- *         Page<Person> page = personRepository.findAll(pageable);
- *
- *         // Convert to DTOs and return
- *         return Pages.pageDtoOf(page.map(PersonDto::fromEntity));
+ *         // Paginator resolves the sort field string to PersonSort, queries, and converts to DTOs
+ *         return PAGINATOR.paginate(pageSpec, personRepository::findAll, PersonDto::fromEntity);
  *     }
  *
  *     // If you need custom error handling:
  *     public PageDto<PersonDto> findAllWithCustomErrors(PageSpec pageSpec) {
  *         try {
- *             Pageable pageable = Pageables.pageableOf(pageSpec, PersonSort.class);
- *             Page<Person> page = personRepository.findAll(pageable);
- *             return Pages.pageDtoOf(page.map(PersonDto::fromEntity));
+ *             return PAGINATOR.paginate(pageSpec, personRepository::findAll, PersonDto::fromEntity);
  *         } catch (UnknownSortByValueException e) {
  *             throw new InvalidSortFieldException("Invalid sort field: " + pageSpec.sortBy(), e);
  *         }
@@ -205,7 +199,7 @@ package org.jwcarman.jpa.pagination;
  *
  * @see SortPropertyProvider
  * @see SortDirection
- * @see org.jwcarman.jpa.spring.page.Pageables
+ * @see org.jwcarman.jpa.spring.page.Paginator
  * @see PageDto
  */
 public interface PageSpec {

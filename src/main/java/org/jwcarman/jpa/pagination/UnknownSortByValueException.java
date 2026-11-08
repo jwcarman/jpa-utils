@@ -12,7 +12,7 @@ import lombok.Getter;
  * <h2>Usage Example</h2>
  * <pre>{@code
  * try {
- *     Pageable pageable = Pageables.pageableOf(pageSpec, PersonSort.class);
+ *     Pageable pageable = paginator.pageableOf(pageSpec);
  * } catch (UnknownSortByValueException e) {
  *     // e.getProvidedValue() returns "FOO"
  *     // e.getExpectedValues() returns ["FIRST_NAME", "LAST_NAME", "EMAIL"]

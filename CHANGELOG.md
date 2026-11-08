@@ -7,7 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking Changes
+- **Java 25 / Spring Boot 4 baseline**: compiled against Java 25, Spring Framework 7, Spring Data 2026.0,
+  Hibernate 7 and Jakarta Persistence 3.2 (previously Java 21 / Spring Framework 6.2 / Hibernate 6.6)
+- **`Pageables` and `Pages` removed** in favor of `Paginator`:
+  `Pageables.pageableOf(spec, X.class)` → `Paginator.of(X.class).pageableOf(spec)`;
+  `Pageables.pageableOf(spec, X.class, n)` → `Paginator.of(X.class, cfg -> cfg.defaultPageSize(n)).pageableOf(spec)`;
+  `Pages.pageDtoOf(page)` → `paginator.pageDtoOf(page)`
+- **Every `Pageable` now ends with a unique tiebreaker** (default property `id`), and requests without `sortBy`
+  are sorted by it instead of unsorted. Entities whose identifier is not named `id` must configure
+  `cfg -> cfg.tiebreaker("theirId")` (or `noTiebreaker()`), otherwise queries fail with `PropertyReferenceException`
+- An out-of-range default page size is now rejected when the `Paginator` is built instead of being clamped
+
 ### Added
+- `Paginator`: configured once per sort enum (`Paginator.of(X.class, cfg -> ...)`), immutable and thread-safe
+  - `pageableOf(PageSpec)`, `pageDtoOf(Page)`, `pageDtoOf(Page, mapper)`,
+    `paginate(PageSpec, query)` and `paginate(PageSpec, query, mapper)`
+  - Config: `tiebreaker(String...)`, `noTiebreaker()`, `defaultSort(S)`, `defaultPageSize(int)`, `maxPageSize(int)`
+- Stable paging: the tiebreaker makes the sort a total order, so rows can no longer repeat or vanish across pages
+  when sort values tie (reproduced on PostgreSQL, MySQL and CockroachDB before the fix)
 - Security considerations documentation for search term length validation
 - Error handling documentation with ProblemDetail (RFC 7807) examples
 - `MIN_PAGE_SIZE` constant to eliminate magic numbers

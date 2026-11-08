@@ -78,16 +78,16 @@ import java.lang.annotation.Target;
  * @Service
  * public class PersonService {
  *
+ *     private static final Paginator PAGINATOR = Paginator.of(PersonSort.class);
+ *
  *     @Autowired
  *     private PersonRepository personRepository;
  *
  *     public PageDto<PersonDto> search(String query, PageSpec pageSpec) {
- *         Pageable pageable = Pageables.pageableOf(pageSpec, PersonSort.class);
- *
  *         // Automatically searches across all @Searchable fields
- *         Page<Person> page = personRepository.search(query, pageable);
- *
- *         return Pages.pageDtoOf(page.map(PersonDto::fromEntity));
+ *         return PAGINATOR.paginate(pageSpec,
+ *                 pageable -> personRepository.search(query, pageable),
+ *                 PersonDto::fromEntity);
  *     }
  * }
  *

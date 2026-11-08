@@ -55,14 +55,14 @@ import org.springframework.lang.Nullable;
  * @Service
  * public class PersonService {
  *
+ *     private static final Paginator PAGINATOR = Paginator.of(PersonSort.class);
+ *
  *     @Autowired
  *     private PersonRepository personRepository;
  *
  *     public PageDto<PersonDto> findAll(PageSpec pageSpec) {
- *         // Pageables automatically resolves sort field
- *         Pageable pageable = Pageables.pageableOf(pageSpec, PersonSort.class);
- *         Page<Person> page = personRepository.findAll(pageable);
- *         return Pages.pageDtoOf(page.map(PersonDto::fromEntity));
+ *         // Paginator resolves the sort field, queries, and converts to DTOs
+ *         return PAGINATOR.paginate(pageSpec, personRepository::findAll, PersonDto::fromEntity);
  *     }
  * }
  * }</pre>
@@ -95,7 +95,7 @@ import org.springframework.lang.Nullable;
  *
  *     PageDto<PersonDto> result = personService.findAll(params);
  *
- *     // Uses Pageables defaults (page 0, size 20, unsorted)
+ *     // Uses Paginator defaults (page 0, size 20, sorted by the "id" tiebreaker)
  *     assertThat(result.pagination().pageIndex()).isZero();
  *     assertThat(result.pagination().pageSize()).isEqualTo(20);
  * }
@@ -126,8 +126,7 @@ import org.springframework.lang.Nullable;
  * @param pageSize       the number of items per page, may be null (defaults to 20)
  * @param sortBy         the sort field name as string (e.g., "LAST_NAME"), may be null for unsorted
  * @param sortDirection  the sort direction (ASC or DESC), may be null (defaults to ASC)
- * @see org.jwcarman.jpa.spring.page.Pageables
- * @see org.jwcarman.jpa.spring.page.Pages
+ * @see org.jwcarman.jpa.spring.page.Paginator
  */
 public record PageParams(
     @Nullable Integer pageIndex,

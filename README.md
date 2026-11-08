@@ -43,6 +43,7 @@ A collection of utilities for building REST APIs with [Jakarta Persistence API](
 - **🕒 Auditing Support**: Automatic tracking of creation/modification timestamps and users
 - **🌱 Spring Integration**: Optional utilities for Spring Data JPA and Spring Web
 - **🎯 Type-Safe Sorting**: Enum-based sort field definitions with automatic resolution
+- **🧱 Stable Paging**: A unique tiebreaker on every sort, so rows never repeat or vanish across pages
 - **✨ Clean Architecture**: Proper dependency direction (web → app → domain)
 
 ## Installation
@@ -53,7 +54,7 @@ Add the dependency to your `pom.xml`:
 <dependency>
     <groupId>org.jwcarman.jpa</groupId>
     <artifactId>jpa-utils</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -138,13 +139,13 @@ public class PersonController {
 @Service
 public class PersonService {
 
+    private static final Paginator PAGINATOR = Paginator.of(PersonSort.class);
+
     @Autowired
     private PersonRepository personRepository;
 
     public PageDto<PersonDto> search(String query, PageSpec pageSpec) {
-        Pageable pageable = Pageables.pageableOf(pageSpec, PersonSort.class);
-        Page<Person> page = personRepository.search(query, pageable);
-        return Pages.pageDtoOf(page.map(PersonDto::fromEntity));
+        return PAGINATOR.paginate(pageSpec, pageable -> personRepository.search(query, pageable), PersonDto::fromEntity);
     }
 }
 ```
@@ -377,43 +378,70 @@ public PageDto<ProductDto> getProducts(
 // URL: /api/products?page=0&size=10&sortBy=NAME&sortDirection=ASC
 ```
 
-#### Converting with `Pageables` and `Pages`
+#### Paging with `Paginator`
 
-**`Pageables`** - Converts `PageSpec` to Spring's `Pageable`:
+A `Paginator` turns a `PageSpec` into Spring's `Pageable`, and a Spring `Page` back into a `PageDto`. Configure one per
+sort enum and reuse it; it is immutable and thread-safe, so a `static final` constant is the usual home:
 
 ```java
 @Service
 public class ProductService {
 
+    private static final Paginator PAGINATOR = Paginator.of(ProductSort.class);
+
     @Autowired
     private ProductRepository productRepository;
 
     public PageDto<ProductDto> findAll(PageSpec pageSpec) {
-        // Automatically resolves sort field string to ProductSort enum
-        Pageable pageable = Pageables.pageableOf(pageSpec, ProductSort.class);
-
-        // Or with custom default page size
-        // Pageable pageable = Pageables.pageableOf(pageSpec, ProductSort.class, 50);
-
-        Page<Product> page = productRepository.findAll(pageable);
-        return Pages.pageDtoOf(page.map(ProductDto::fromEntity));
+        // Builds the Pageable, runs the query, and maps each entity to a DTO
+        return PAGINATOR.paginate(pageSpec, productRepository::findAll, ProductDto::fromEntity);
     }
 }
+```
+
+The `query` argument is any function from `Pageable` to `Page`, so `findAll`, `search`, Specifications, and custom
+`@Query` methods all work. When you need the pieces separately, use them directly:
+
+```java
+Pageable pageable = PAGINATOR.pageableOf(pageSpec);
+Page<Product> page = productRepository.findAll(pageable);
+PageDto<ProductDto> dto = PAGINATOR.pageDtoOf(page, ProductDto::fromEntity);
+```
+
+**Configuration** (all optional):
+
+```java
+private static final Paginator PAGINATOR = Paginator.of(ProductSort.class, cfg -> cfg
+        .defaultSort(ProductSort.NAME)   // used when the request has no sortBy
+        .defaultPageSize(25)             // default: 20
+        .maxPageSize(100)                // default: 1000; larger requests are clamped
+        .tiebreaker("sku"));             // default: "id"
 ```
 
 **Default Values:**
 - Page index: 0 (first page)
 - Page size: 20
-- Sort: unsorted
+- Sort: the configured default sort, if any; otherwise only the tiebreaker
 - Sort direction: ASC
 
-**`Pages`** - Converts Spring's `Page` to framework-agnostic `PageDto`:
+#### Stable Ordering (Tiebreaker)
+
+SQL only orders rows whose sort values differ. Rows that tie (say, many products in the same category) can come back
+in any order, and each page is a separate query, so without a unique final sort key a row can appear on two pages
+or on none. `Paginator` prevents this by appending a unique *tiebreaker* property, ascending, after the requested sort:
+
+```
+?sortBy=CATEGORY&sortDirection=DESC   →   ORDER BY category DESC, id ASC
+(no sortBy)                           →   ORDER BY id ASC
+```
+
+The default tiebreaker is `id`, the identifier of `BaseEntity`. If your entity's unique property has a different
+name, configure it; for composite keys, list every property; to opt out, use `noTiebreaker()`:
 
 ```java
-Page<Product> springPage = productRepository.findAll(pageable);
-PageDto<ProductDto> pageDto = Pages.pageDtoOf(
-    springPage.map(product -> new ProductDto(product))
-);
+Paginator.of(MemberSort.class, cfg -> cfg.tiebreaker("identityId"));
+Paginator.of(LineItemSort.class, cfg -> cfg.tiebreaker("orderId", "lineNo"));
+Paginator.of(EventSort.class, cfg -> cfg.noTiebreaker());
 ```
 
 ### Searchable Repository
@@ -433,13 +461,15 @@ public interface ProductRepository extends SearchableRepository<Product, UUID> {
 @Service
 public class ProductService {
 
+    private static final Paginator PAGINATOR = Paginator.of(ProductSort.class);
+
     @Autowired
     private ProductRepository productRepository;
 
     public PageDto<ProductDto> search(String query, PageSpec pageSpec) {
-        Pageable pageable = Pageables.pageableOf(pageSpec, ProductSort.class);
-        Page<Product> page = productRepository.search(query, pageable);
-        return Pages.pageDtoOf(page.map(ProductDto::fromEntity));
+        return PAGINATOR.paginate(pageSpec,
+                pageable -> productRepository.search(query, pageable),
+                ProductDto::fromEntity);
     }
 }
 ```
@@ -469,7 +499,7 @@ public class ProductController {
 
 ### Invalid Sort Fields
 
-When an invalid sort field is provided, `Pageables.pageableOf()` throws `UnknownSortByValueException`. This typically happens when a user provides a sort field name that doesn't match any of your defined enum constants.
+When an invalid sort field is provided, `Paginator` throws `UnknownSortByValueException`. This typically happens when a user provides a sort field name that doesn't match any of your defined enum constants.
 
 **Service Layer Handling:**
 
@@ -477,14 +507,14 @@ When an invalid sort field is provided, `Pageables.pageableOf()` throws `Unknown
 @Service
 public class ProductService {
 
+    private static final Paginator PAGINATOR = Paginator.of(ProductSort.class);
+
     @Autowired
     private ProductRepository productRepository;
 
     public PageDto<ProductDto> findAll(PageSpec pageSpec) {
         try {
-            Pageable pageable = Pageables.pageableOf(pageSpec, ProductSort.class);
-            Page<Product> page = productRepository.findAll(pageable);
-            return Pages.pageDtoOf(page.map(ProductDto::fromEntity));
+            return PAGINATOR.paginate(pageSpec, productRepository::findAll, ProductDto::fromEntity);
         } catch (UnknownSortByValueException e) {
             // e.getProvidedValue() - the invalid value the user sent
             // e.getExpectedValues() - array of valid enum constant names
@@ -600,7 +630,7 @@ Spring Boot will automatically return HTTP 400 Bad Request when the validation f
 
 ### Page Size Limits
 
-The library automatically clamps page sizes to `Pageables.MAX_PAGE_SIZE` (1000) to prevent memory exhaustion attacks. However, you may want to enforce stricter limits at the service or controller level for your specific use case:
+`Paginator` clamps requested page sizes to its maximum (`Paginator.DEFAULT_MAX_PAGE_SIZE`, 1000, unless configured) to prevent memory exhaustion attacks. Lower it per paginator with `cfg -> cfg.maxPageSize(100)`, or enforce limits at the controller level:
 
 ```java
 @GetMapping
@@ -727,13 +757,13 @@ public interface BookRepository extends SearchableRepository<Book, UUID> {
 @Service
 public class BookService {
 
+    private static final Paginator PAGINATOR = Paginator.of(BookSort.class);
+
     @Autowired
     private BookRepository bookRepository;
 
     public PageDto<BookDto> search(String query, PageSpec pageSpec) {
-        Pageable pageable = Pageables.pageableOf(pageSpec, BookSort.class);
-        Page<Book> page = bookRepository.search(query, pageable);
-        return Pages.pageDtoOf(page.map(BookDto::fromEntity));
+        return PAGINATOR.paginate(pageSpec, pageable -> bookRepository.search(query, pageable), BookDto::fromEntity);
     }
 }
 ```
