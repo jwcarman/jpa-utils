@@ -2,7 +2,7 @@ package org.jwcarman.jpa.integration;
 
 import org.junit.jupiter.api.Tag;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -21,7 +21,7 @@ public class MySQLIT extends DatabaseIT {
 
     @Container
     @ServiceConnection
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:9.2")
+    static MySQLContainer mysql = new MySQLContainer("mysql:9.2")
             .withStartupTimeout(Duration.ofSeconds(60))
             .withStartupAttempts(1)
             .withCommand("--skip-log-bin",

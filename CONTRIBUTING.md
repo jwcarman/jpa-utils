@@ -59,7 +59,7 @@ When adding new features, please include:
 
 ## 📜 Code Style and Conventions
 
-- **Java 21+**: Use modern Java features judiciously — prefer clarity and simplicity
+- **Java 25+**: Use modern Java features judiciously — prefer clarity and simplicity
 - **Formatting**: Follow standard Java conventions (IntelliJ IDEA or Google Java Style)
 - **Javadoc**: All public methods and classes should have comprehensive Javadoc
 - **Visibility**: Keep method visibility as narrow as possible
@@ -68,18 +68,9 @@ When adding new features, please include:
 
 ## 🔢 Java Version Policy
 
-We follow a **"last LTS"** policy to balance modern features with maximum compatibility:
-
-- **Current baseline**: Java 21 (LTS released September 2023)
-- **Policy**: Upgrade to the newest LTS when the *next* LTS is released
-- **Rationale**: This ensures we stay on well-adopted versions while maximizing library compatibility
-
-**Example timeline:**
-- Java 21 LTS (Sep 2023) → We adopt Java 21
-- Java 25 LTS (Sep 2025) → We stay on Java 21 (allow adoption time)
-- Java 29 LTS (Sep 2027) → We upgrade to Java 25
-
-This approach gives enterprise users 2+ years to adopt each LTS before we require it, while keeping the codebase modern.
+- **Current baseline**: Java 25 (LTS released September 2025)
+- **Platform**: Spring Boot 4.x / Spring Framework 7 / Spring Data 2026.x / Hibernate 7
+- **Policy**: The library targets the latest Java LTS together with the current Spring Boot generation
 
 ### Commit Messages
 

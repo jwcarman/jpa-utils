@@ -2,7 +2,7 @@ package org.jwcarman.jpa.integration;
 
 import org.junit.jupiter.api.Tag;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.containers.CockroachContainer;
+import org.testcontainers.cockroachdb.CockroachContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 

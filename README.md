@@ -802,10 +802,10 @@ GET /api/books?query=java&pageSize=50
 
 ## Requirements
 
-- **Java**: 21 or higher
-- **Jakarta Persistence API**: 3.1.0
-- **Spring Framework** (optional): 6.2.2 or higher
-- **Spring Data JPA** (optional): 2024.1.2 or higher
+- **Java**: 25 or higher
+- **Jakarta Persistence API**: 3.2
+- **Spring Framework** (optional): 7.0 or higher
+- **Spring Data JPA** (optional): 2026.0 or higher (Spring Boot 4.x)
 
 ## Database Compatibility
 

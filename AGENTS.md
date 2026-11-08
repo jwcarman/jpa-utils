@@ -7,8 +7,9 @@ This file provides guidance to AI coding assistants when working with code in th
 This is a Maven-based Java library providing utilities for Jakarta Persistence API (JPA) applications. The library is published to Maven Central as `org.jwcarman.jpa:jpa-utils`.
 
 **Key Technologies:**
-- Java 23
-- Jakarta Persistence API 3.1.0
+- Java 25
+- Jakarta Persistence API 3.2 / Hibernate 7
+- Spring Boot 4.x (Spring Framework 7, Spring Data 2026.x) for the optional Spring integration
 - Spring Data JPA (optional integration)
 - Maven for build management
 - JUnit 5 and AssertJ for testing
