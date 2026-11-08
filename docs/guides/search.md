@@ -65,18 +65,23 @@ The words are bound as parameters, never concatenated into SQL.
 
 ## Combining search with other conditions
 
-`Searchables.createSearchPredicate(term, root, builder)` returns the same predicate for use in your own
-Specifications:
+`searchFor(term)` on a `SearchableRepository` is the same search as a `Specification`, so it composes with your
+own:
 
 ```java
-public Page<Article> searchPublished(String term, Pageable pageable) {
-    Specification<Article> published = (root, query, cb) -> cb.isTrue(root.get("published"));
-    Specification<Article> matches = (root, query, cb) -> Searchables.createSearchPredicate(term, root, cb);
-    return articles.findAll(published.and(matches), pageable);
+public PageDto<ArticleDto> searchPublished(String term, PageSpec spec) {
+    return ARTICLES.paginate(spec,
+            pageable -> articles.findAll(articles.searchFor(term).and(isPublished()), pageable),
+            ArticleDto::of);
+}
+
+private static Specification<Article> isPublished() {
+    return (root, query, cb) -> cb.isTrue(root.get("published"));
 }
 ```
 
-The predicate works with plain Jakarta Persistence Criteria queries as well; it needs no Spring.
+Without Spring, `Searchables.createSearchPredicate(term, root, builder)` returns the same condition as a Jakarta
+Persistence Criteria `Predicate`, for your own Criteria queries.
 
 ## Limits
 

@@ -5,11 +5,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest(showSql = false)
 @ContextConfiguration(classes = {SpringBootConfig.class})
@@ -50,6 +52,28 @@ class SearchableRepositoryTest {
         // Second search - should use cached result (warning logged only once during cache population)
         Page<Unsearchable> page2 = unsearchableRepository.search("xyz", Pageable.unpaged());
         assertThat(page2.getTotalElements()).isEqualTo(2);
+    }
+
+    @Test
+    void search_for_combines_with_other_specifications() {
+        personRepository.save(new Person("Joe", "Shmoe"));
+        personRepository.save(new Person("Joe", "Black"));
+        personRepository.save(new Person("Ann", "Shmoe"));
+        Specification<Person> lastNameShmoe = (root, query, cb) -> cb.equal(root.get("lastName"), "Shmoe");
+
+        Page<Person> page = personRepository.findAll(personRepository.searchFor("joe").and(lastNameShmoe), Pageable.unpaged());
+
+        assertThat(page.getContent()).extracting(Person::getFirstName, Person::getLastName)
+                .containsExactly(tuple("Joe", "Shmoe"));
+    }
+
+    @Test
+    void search_for_a_blank_term_matches_everything() {
+        personRepository.save(new Person("Joe", "Shmoe"));
+        personRepository.save(new Person("Ann", "Black"));
+
+        assertThat(personRepository.findAll(personRepository.searchFor("  "), Pageable.unpaged())
+                .getTotalElements()).isEqualTo(2);
     }
 
     @Test
