@@ -78,7 +78,7 @@ import java.lang.annotation.Target;
  * @Service
  * public class PersonService {
  *
- *     private static final Paginator PAGINATOR = Paginator.of(PersonSort.class);
+ *     private static final Paginator PAGINATOR = Paginator.of(Person.class, PersonSort.class);
  *
  *     @Autowired
  *     private PersonRepository personRepository;

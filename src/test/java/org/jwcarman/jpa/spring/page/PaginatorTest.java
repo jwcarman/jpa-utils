@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,7 +30,7 @@ import static org.springframework.data.domain.Sort.Order.desc;
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class PaginatorTest {
 
-    private static final Paginator DEFAULTS = Paginator.of(PersonSort.class);
+    private static final Paginator DEFAULTS = Paginator.of(Person.class, PersonSort.class);
 
     private static PageSpec spec(Integer pageIndex, Integer pageSize, String sortBy, SortDirection sortDirection) {
         return new TestPageSpec(pageIndex, pageSize, sortBy, sortDirection);
@@ -119,7 +120,7 @@ class PaginatorTest {
 
         @Test
         void uses_a_configured_property() {
-            Paginator paginator = Paginator.of(PersonSort.class, cfg -> cfg.tiebreaker("identityId"));
+            Paginator paginator = Paginator.of(Member.class, PersonSort.class, cfg -> cfg.tiebreaker("identityId"));
 
             Pageable pageable = paginator.pageableOf(spec(0, 10, "FIRST_NAME", SortDirection.ASC));
 
@@ -128,7 +129,7 @@ class PaginatorTest {
 
         @Test
         void uses_every_property_of_a_composite_tiebreaker_in_order() {
-            Paginator paginator = Paginator.of(PersonSort.class, cfg -> cfg.tiebreaker("orderId", "lineNo"));
+            Paginator paginator = Paginator.of(LineItem.class, PersonSort.class, cfg -> cfg.tiebreaker("orderId", "lineNo"));
 
             Pageable pageable = paginator.pageableOf(spec(0, 10, "LAST_NAME", SortDirection.DESC));
 
@@ -137,7 +138,7 @@ class PaginatorTest {
 
         @Test
         void skips_composite_properties_the_request_already_sorts_by() {
-            Paginator paginator = Paginator.of(PersonSort.class, cfg -> cfg.tiebreaker("lastName", "id"));
+            Paginator paginator = Paginator.of(Person.class, PersonSort.class, cfg -> cfg.tiebreaker("lastName", "id"));
 
             Pageable pageable = paginator.pageableOf(spec(0, 10, "LAST_NAME", SortDirection.DESC));
 
@@ -146,7 +147,7 @@ class PaginatorTest {
 
         @Test
         void can_be_disabled() {
-            Paginator paginator = Paginator.of(PersonSort.class, Paginator.Config::noTiebreaker);
+            Paginator paginator = Paginator.of(Person.class, PersonSort.class, Paginator.Config::noTiebreaker);
 
             assertThat(ordersOf(paginator.pageableOf(spec(0, 10, "FIRST_NAME", SortDirection.ASC))))
                     .containsExactly(asc("firstName"));
@@ -155,20 +156,20 @@ class PaginatorTest {
 
         @Test
         void rejects_an_empty_property_list() {
-            assertThatThrownBy(() -> Paginator.of(PersonSort.class, cfg -> cfg.tiebreaker()))
+            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, cfg -> cfg.tiebreaker()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("noTiebreaker()");
         }
 
         @Test
         void rejects_a_blank_property() {
-            assertThatThrownBy(() -> Paginator.of(PersonSort.class, cfg -> cfg.tiebreaker("id", " ")))
+            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, cfg -> cfg.tiebreaker("id", " ")))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         void rejects_a_null_property() {
-            assertThatThrownBy(() -> Paginator.of(PersonSort.class, cfg -> cfg.tiebreaker("id", null)))
+            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, cfg -> cfg.tiebreaker("id", null)))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }
@@ -176,7 +177,7 @@ class PaginatorTest {
     @Nested
     class Default_sort {
 
-        private final Paginator paginator = Paginator.of(PersonSort.class, cfg -> cfg.defaultSort(PersonSort.LAST_NAME));
+        private final Paginator paginator = Paginator.of(Person.class, PersonSort.class, cfg -> cfg.defaultSort(PersonSort.LAST_NAME));
 
         @Test
         void is_used_when_no_sort_by_is_given() {
@@ -221,7 +222,7 @@ class PaginatorTest {
 
         @Test
         void rejects_null() {
-            assertThatThrownBy(() -> Paginator.of(PersonSort.class, cfg -> cfg.defaultSort(null)))
+            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, cfg -> cfg.defaultSort(null)))
                     .isInstanceOf(NullPointerException.class);
         }
     }
@@ -258,7 +259,7 @@ class PaginatorTest {
 
         @Test
         void uses_a_configured_default_when_missing() {
-            Paginator paginator = Paginator.of(PersonSort.class, cfg -> cfg.defaultPageSize(25));
+            Paginator paginator = Paginator.of(Person.class, PersonSort.class, cfg -> cfg.defaultPageSize(25));
 
             assertThat(paginator.pageableOf(spec(0, null, null, null)).getPageSize()).isEqualTo(25);
         }
@@ -287,7 +288,7 @@ class PaginatorTest {
 
         @Test
         void allows_a_raised_maximum() {
-            Paginator paginator = Paginator.of(PersonSort.class, cfg -> cfg.maxPageSize(1000));
+            Paginator paginator = Paginator.of(Person.class, PersonSort.class, cfg -> cfg.maxPageSize(1000));
 
             assertThat(paginator.pageableOf(spec(0, 1000, null, null)).getPageSize()).isEqualTo(1000);
         }
@@ -300,28 +301,28 @@ class PaginatorTest {
 
         @Test
         void clamps_to_a_configured_maximum() {
-            Paginator paginator = Paginator.of(PersonSort.class, cfg -> cfg.defaultPageSize(10).maxPageSize(50));
+            Paginator paginator = Paginator.of(Person.class, PersonSort.class, cfg -> cfg.defaultPageSize(10).maxPageSize(50));
 
             assertThat(paginator.pageableOf(spec(0, 51, null, null)).getPageSize()).isEqualTo(50);
         }
 
         @Test
         void rejects_a_default_below_one() {
-            assertThatThrownBy(() -> Paginator.of(PersonSort.class, cfg -> cfg.defaultPageSize(0)))
+            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, cfg -> cfg.defaultPageSize(0)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("defaultPageSize");
         }
 
         @Test
         void rejects_a_default_above_the_maximum() {
-            assertThatThrownBy(() -> Paginator.of(PersonSort.class, cfg -> cfg.maxPageSize(10)))
+            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, cfg -> cfg.maxPageSize(10)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("defaultPageSize");
         }
 
         @Test
         void rejects_a_maximum_below_one() {
-            assertThatThrownBy(() -> Paginator.of(PersonSort.class, cfg -> cfg.maxPageSize(0)))
+            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, cfg -> cfg.maxPageSize(0)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("maxPageSize");
         }
@@ -341,7 +342,7 @@ class PaginatorTest {
 
         @Test
         void uses_a_configured_default_size() {
-            Paginator paginator = Paginator.of(PersonSort.class, cfg -> cfg.defaultPageSize(7));
+            Paginator paginator = Paginator.of(Person.class, PersonSort.class, cfg -> cfg.defaultPageSize(7));
 
             assertThat(paginator.pageableOf(null).getPageSize()).isEqualTo(7);
         }
@@ -351,15 +352,101 @@ class PaginatorTest {
     class Creation {
 
         @Test
+        void rejects_a_null_entity_type() {
+            assertThatThrownBy(() -> Paginator.of(null, PersonSort.class))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("entityType");
+        }
+
+        @Test
         void rejects_a_null_sort_enum_class() {
-            assertThatThrownBy(() -> Paginator.<PersonSort>of(null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> Paginator.<PersonSort>of(Person.class, null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("sortEnumClass");
         }
 
         @Test
         void rejects_a_null_customizer() {
-            assertThatThrownBy(() -> Paginator.of(PersonSort.class, null))
-                    .isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, null))
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("customizer");
+        }
+    }
+
+    @Nested
+    class Property_validation {
+
+        @Test
+        void accepts_properties_inherited_from_a_superclass() {
+            Paginator paginator = Paginator.of(Member.class, PersonSort.class);
+
+            assertThat(ordersOf(paginator.pageableOf(spec(0, 10, "LAST_NAME", null))))
+                    .containsExactly(asc("lastName"), asc("id"));
+        }
+
+        @Test
+        void accepts_nested_property_paths() {
+            Paginator paginator = Paginator.of(Customer.class, CustomerSort.class);
+
+            assertThat(ordersOf(paginator.pageableOf(spec(0, 10, "CITY", null))))
+                    .containsExactly(asc("address.city"), asc("id"));
+        }
+
+        @Test
+        void rejects_a_sort_property_the_entity_does_not_have() {
+            assertThatThrownBy(() -> Paginator.of(Person.class, TypoSort.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("TypoSort.LAST_NAME sorts by \"lastNmae\"")
+                    .hasMessageContaining(Person.class.getName())
+                    .hasMessageContaining("skipPropertyValidation()");
+        }
+
+        @Test
+        void checks_every_constant_not_just_the_requested_one() {
+            assertThatThrownBy(() -> Paginator.of(Person.class, MostlyGoodSort.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("MostlyGoodSort.EMAIL sorts by \"email\"")
+                    .hasMessageNotContaining("FIRST_NAME")
+                    .hasMessageNotContaining("LAST_NAME");
+        }
+
+        @Test
+        void rejects_a_nested_path_that_does_not_resolve() {
+            assertThatThrownBy(() -> Paginator.of(Customer.class, BadNestedSort.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("address.zip");
+        }
+
+        @Test
+        void rejects_a_tiebreaker_the_entity_does_not_have() {
+            assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, cfg -> cfg.tiebreaker("identityId")))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("tiebreaker \"identityId\"")
+                    .hasMessageContaining(Person.class.getName());
+        }
+
+        @Test
+        void rejects_the_default_id_tiebreaker_when_the_entity_has_no_id() {
+            assertThatThrownBy(() -> Paginator.of(NoIdView.class, NoIdSort.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("tiebreaker \"id\"");
+        }
+
+        @Test
+        void rejects_a_blank_sort_property() {
+            assertThatThrownBy(() -> Paginator.of(Person.class, BlankSort.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("BlankSort.NOTHING has no sort property");
+        }
+
+        @Test
+        void can_be_skipped_for_queries_that_sort_by_columns() {
+            Paginator paginator = Paginator.of(Person.class, TypoSort.class, cfg -> cfg
+                    .tiebreaker("person_id")
+                    .skipPropertyValidation());
+
+            assertThat(ordersOf(paginator.pageableOf(spec(0, 10, "LAST_NAME", null))))
+                    .containsExactly(asc("lastNmae"), asc("person_id"));
         }
     }
 
@@ -470,6 +557,96 @@ class PaginatorTest {
         @Override
         public String getSortProperty() {
             return sortProperty;
+        }
+    }
+
+    static class Person {
+        private UUID id;
+        private String firstName;
+        private String lastName;
+    }
+
+    static class Member extends Person {
+        private UUID identityId;
+    }
+
+    static class LineItem extends Person {
+        private UUID orderId;
+        private int lineNo;
+    }
+
+    static class Address {
+        private String city;
+    }
+
+    static class Customer {
+        private UUID id;
+        private Address address;
+    }
+
+    static class NoIdView {
+        private String name;
+    }
+
+    enum CustomerSort implements SortPropertyProvider {
+        CITY;
+
+        @Override
+        public String getSortProperty() {
+            return "address.city";
+        }
+    }
+
+    enum BadNestedSort implements SortPropertyProvider {
+        ZIP;
+
+        @Override
+        public String getSortProperty() {
+            return "address.zip";
+        }
+    }
+
+    enum MostlyGoodSort implements SortPropertyProvider {
+        FIRST_NAME("firstName"),
+        LAST_NAME("lastName"),
+        EMAIL("email");
+
+        private final String sortProperty;
+
+        MostlyGoodSort(String sortProperty) {
+            this.sortProperty = sortProperty;
+        }
+
+        @Override
+        public String getSortProperty() {
+            return sortProperty;
+        }
+    }
+
+    enum TypoSort implements SortPropertyProvider {
+        LAST_NAME;
+
+        @Override
+        public String getSortProperty() {
+            return "lastNmae";
+        }
+    }
+
+    enum NoIdSort implements SortPropertyProvider {
+        NAME;
+
+        @Override
+        public String getSortProperty() {
+            return "name";
+        }
+    }
+
+    enum BlankSort implements SortPropertyProvider {
+        NOTHING;
+
+        @Override
+        public String getSortProperty() {
+            return " ";
         }
     }
 

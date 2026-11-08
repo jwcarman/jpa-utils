@@ -43,7 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ContextConfiguration(classes = {TestConfig.class})
 public abstract class DatabaseIT {
 
-    private static final Paginator PAGINATOR = Paginator.of(TestPersonSort.class);
+    private static final Paginator PAGINATOR = Paginator.of(TestPerson.class, TestPersonSort.class);
 
     @Autowired
     protected TestPersonRepository personRepository;
@@ -220,7 +220,7 @@ public abstract class DatabaseIT {
             personRepository.save(new TestPerson("Same", "Tied", String.format("person%02d@example.com", i)));
         }
         personRepository.flush();
-        Paginator byEmail = Paginator.of(TestPersonSort.class, cfg -> cfg.tiebreaker("email"));
+        Paginator byEmail = Paginator.of(TestPerson.class, TestPersonSort.class, cfg -> cfg.tiebreaker("email"));
 
         List<String> seen = new ArrayList<>();
         for (int pageIndex = 0; pageIndex < 6; pageIndex++) {

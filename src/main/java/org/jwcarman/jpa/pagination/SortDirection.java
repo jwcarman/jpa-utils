@@ -32,7 +32,7 @@ package org.jwcarman.jpa.pagination;
  * @Service
  * public class ProductService {
  *
- *     private static final Paginator PAGINATOR = Paginator.of(ProductSort.class);
+ *     private static final Paginator PAGINATOR = Paginator.of(Product.class, ProductSort.class);
  *
  *     public PageDto<ProductDto> findAll(PageSpec pageSpec) {
  *         // Paginator converts SortDirection to Spring's Sort.Direction

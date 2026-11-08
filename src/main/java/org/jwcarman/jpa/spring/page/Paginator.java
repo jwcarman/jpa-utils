@@ -6,6 +6,8 @@ import org.jwcarman.jpa.pagination.PaginationDto;
 import org.jwcarman.jpa.pagination.SortDirection;
 import org.jwcarman.jpa.pagination.SortPropertyProvider;
 import org.jwcarman.jpa.pagination.UnknownSortByValueException;
+import org.springframework.data.core.PropertyPath;
+import org.springframework.data.core.PropertyReferenceException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -17,16 +19,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Converts framework-agnostic {@link PageSpec} requests into Spring Data {@link Pageable}s, and Spring Data
  * {@link Page}s back into framework-agnostic {@link PageDto}s.
  *
- * <p>A paginator is configured once, for one sort enum, and reused. It is immutable and thread-safe, so the usual
- * home for one is a {@code static final} constant in the service that pages:</p>
+ * <p>A paginator is configured once, for one entity type and sort enum, and reused. It is immutable and
+ * thread-safe, so the usual home for one is a {@code static final} constant in the service that pages:</p>
  *
  * <pre>{@code
- * private static final Paginator PAGINATOR = Paginator.of(PersonSort.class, cfg -> cfg
+ * private static final Paginator PAGINATOR = Paginator.of(Person.class, PersonSort.class, cfg -> cfg
  *         .defaultSort(PersonSort.LAST_NAME)
  *         .defaultPageSize(25));
  *
@@ -42,6 +45,14 @@ import java.util.function.Function;
  * the requested sort (and used alone when nothing else is sorted). The default tiebreaker is {@code "id"}, the
  * identifier of {@link org.jwcarman.jpa.entity.BaseEntity}. Entities whose unique property is named differently
  * configure it with {@link Config#tiebreaker(String...)}; {@link Config#noTiebreaker()} opts out.</p>
+ *
+ * <h2>Property validation</h2>
+ * <p>When a paginator is built, every sort enum constant's {@linkplain SortPropertyProvider#getSortProperty()
+ * property} and every tiebreaker property is checked against the entity type, using the same property-path rules
+ * Spring Data applies at query time. A typo or a missing property therefore fails when the paginator is created
+ * (typically at class initialization or in the first test), not as a {@link PropertyReferenceException} on every
+ * request. Queries that sort by something other than entity properties, such as native queries sorting by column
+ * names, opt out with {@link Config#skipPropertyValidation()}.</p>
  *
  * <h2>Sort resolution</h2>
  * <ol>
@@ -91,41 +102,78 @@ public final class Paginator {
 // -------------------------- STATIC METHODS --------------------------
 
     /**
-     * Creates a paginator for the given sort enum with the default settings: {@code "id"} tiebreaker, no default
-     * sort, page size {@value #DEFAULT_PAGE_SIZE}, maximum page size {@value #DEFAULT_MAX_PAGE_SIZE}.
+     * Creates a paginator for the given entity type and sort enum with the default settings: {@code "id"}
+     * tiebreaker, no default sort, page size {@value #DEFAULT_PAGE_SIZE}, maximum page size
+     * {@value #DEFAULT_MAX_PAGE_SIZE}.
      *
+     * @param entityType    the entity the paged queries return; sort and tiebreaker properties are validated
+     *                      against it
      * @param sortEnumClass the enum whose constant names are the accepted {@code sortBy} values
      * @param <S>           the sort enum type
      * @return the paginator
+     * @throws IllegalArgumentException if a sort or tiebreaker property is not a property of {@code entityType}
      */
-    public static <S extends Enum<S> & SortPropertyProvider> Paginator of(Class<S> sortEnumClass) {
-        return of(sortEnumClass, cfg -> {
+    public static <S extends Enum<S> & SortPropertyProvider> Paginator of(Class<?> entityType, Class<S> sortEnumClass) {
+        return of(entityType, sortEnumClass, cfg -> {
         });
     }
 
     /**
-     * Creates a paginator for the given sort enum, customizing the default settings.
+     * Creates a paginator for the given entity type and sort enum, customizing the default settings.
      *
      * <pre>{@code
-     * Paginator.of(MemberSort.class, cfg -> cfg
+     * Paginator.of(MemberDirectoryEntry.class, MemberSort.class, cfg -> cfg
      *         .tiebreaker("identityId")
      *         .defaultSort(MemberSort.NAME)
      *         .defaultPageSize(25)
      *         .maxPageSize(100));
      * }</pre>
      *
+     * @param entityType    the entity the paged queries return; sort and tiebreaker properties are validated
+     *                      against it unless {@link Config#skipPropertyValidation()} is set
      * @param sortEnumClass the enum whose constant names are the accepted {@code sortBy} values
      * @param customizer    adjusts the settings
      * @param <S>           the sort enum type
      * @return the paginator
-     * @throws IllegalArgumentException if the resulting settings are inconsistent
+     * @throws IllegalArgumentException if the resulting settings are inconsistent, or a sort or tiebreaker property
+     *                                  is not a property of {@code entityType}
      */
-    public static <S extends Enum<S> & SortPropertyProvider> Paginator of(Class<S> sortEnumClass, Consumer<Config<S>> customizer) {
+    public static <S extends Enum<S> & SortPropertyProvider> Paginator of(Class<?> entityType, Class<S> sortEnumClass, Consumer<Config<S>> customizer) {
+        Objects.requireNonNull(entityType, "entityType must not be null");
         Objects.requireNonNull(sortEnumClass, "sortEnumClass must not be null");
         Objects.requireNonNull(customizer, "customizer must not be null");
         final Config<S> config = new Config<>();
         customizer.accept(config);
+        config.validate();
+        if (config.validateProperties) {
+            validateProperties(entityType, sortEnumClass, config.tiebreaker);
+        }
         return new Paginator(sortBy -> resolveSortEnum(sortBy, sortEnumClass), config);
+    }
+
+    private static <S extends Enum<S> & SortPropertyProvider> void validateProperties(Class<?> entityType, Class<S> sortEnumClass, List<String> tiebreaker) {
+        for (S constant : sortEnumClass.getEnumConstants()) {
+            final String property = constant.getSortProperty();
+            if (property == null || property.isBlank()) {
+                throw new IllegalArgumentException(String.format("%s.%s has no sort property",
+                        sortEnumClass.getSimpleName(), constant.name()));
+            }
+            requireProperty(entityType, property, () -> String.format("%s.%s sorts by \"%s\"",
+                    sortEnumClass.getSimpleName(), constant.name(), property));
+        }
+        for (String property : tiebreaker) {
+            requireProperty(entityType, property, () -> String.format("tiebreaker \"%s\"", property));
+        }
+    }
+
+    private static void requireProperty(Class<?> entityType, String property, Supplier<String> subject) {
+        try {
+            PropertyPath.from(property, entityType);
+        } catch (PropertyReferenceException e) {
+            throw new IllegalArgumentException(String.format(
+                    "%s, which is not a property of %s (use skipPropertyValidation() if the query sorts by something else)",
+                    subject.get(), entityType.getName()), e);
+        }
     }
 
     private static <S extends Enum<S> & SortPropertyProvider> S resolveSortEnum(String sortBy, Class<S> sortEnumClass) {
@@ -146,7 +194,6 @@ public final class Paginator {
 // --------------------------- CONSTRUCTORS ---------------------------
 
     private Paginator(Function<String, SortPropertyProvider> sortResolver, Config<?> config) {
-        config.validate();
         this.sortResolver = sortResolver;
         this.defaultSort = config.defaultSort;
         this.tiebreaker = config.tiebreaker;
@@ -265,7 +312,7 @@ public final class Paginator {
 
     /**
      * Settings for a {@link Paginator}, adjusted by the customizer passed to
-     * {@link Paginator#of(Class, Consumer)}. Each method returns this config for chaining; the settings are
+     * {@link Paginator#of(Class, Class, Consumer)}. Each method returns this config for chaining; the settings are
      * validated together when the paginator is built.
      *
      * @param <S> the sort enum type
@@ -276,6 +323,7 @@ public final class Paginator {
         private List<String> tiebreaker = List.of(DEFAULT_TIEBREAKER);
         private int defaultPageSize = DEFAULT_PAGE_SIZE;
         private int maxPageSize = DEFAULT_MAX_PAGE_SIZE;
+        private boolean validateProperties = true;
 
         private Config() {
         }
@@ -310,6 +358,17 @@ public final class Paginator {
          */
         public Config<S> noTiebreaker() {
             this.tiebreaker = List.of();
+            return this;
+        }
+
+        /**
+         * Skips checking the sort and tiebreaker properties against the entity type. Use it only when the paged
+         * query does not sort by entity properties, e.g. a native query whose sort keys are column names.
+         *
+         * @return this config
+         */
+        public Config<S> skipPropertyValidation() {
+            this.validateProperties = false;
             return this;
         }
 

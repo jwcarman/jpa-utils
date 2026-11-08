@@ -139,7 +139,7 @@ public class PersonController {
 @Service
 public class PersonService {
 
-    private static final Paginator PAGINATOR = Paginator.of(PersonSort.class);
+    private static final Paginator PAGINATOR = Paginator.of(Person.class, PersonSort.class);
 
     @Autowired
     private PersonRepository personRepository;
@@ -381,13 +381,13 @@ public PageDto<ProductDto> getProducts(
 #### Paging with `Paginator`
 
 A `Paginator` turns a `PageSpec` into Spring's `Pageable`, and a Spring `Page` back into a `PageDto`. Configure one per
-sort enum and reuse it; it is immutable and thread-safe, so a `static final` constant is the usual home:
+entity type and sort enum and reuse it; it is immutable and thread-safe, so a `static final` constant is the usual home:
 
 ```java
 @Service
 public class ProductService {
 
-    private static final Paginator PAGINATOR = Paginator.of(ProductSort.class);
+    private static final Paginator PAGINATOR = Paginator.of(Product.class, ProductSort.class);
 
     @Autowired
     private ProductRepository productRepository;
@@ -411,12 +411,18 @@ PageDto<ProductDto> dto = PAGINATOR.pageDtoOf(page, ProductDto::fromEntity);
 **Configuration** (all optional):
 
 ```java
-private static final Paginator PAGINATOR = Paginator.of(ProductSort.class, cfg -> cfg
+private static final Paginator PAGINATOR = Paginator.of(Product.class, ProductSort.class, cfg -> cfg
         .defaultSort(ProductSort.NAME)   // used when the request has no (or a blank) sortBy
         .defaultPageSize(25)             // default: 20
         .maxPageSize(500)                // default: 100; larger requests are clamped
         .tiebreaker("sku"));             // default: "id"
 ```
+
+**Property validation:** the first argument to `Paginator.of` is the entity the queries return. When the paginator
+is built, every sort enum constant's property and every tiebreaker property is checked against it (nested paths
+like `address.city` included), so a typo fails at startup with a message naming the enum constant and the entity,
+instead of every request failing with a `PropertyReferenceException`. If a query sorts by something other than entity
+properties (for example a native query sorting by column names), opt out with `cfg -> cfg.skipPropertyValidation()`.
 
 **Default Values:**
 - Page index: 0 (first page)
@@ -439,9 +445,9 @@ The default tiebreaker is `id`, the identifier of `BaseEntity`. If your entity's
 name, configure it; for composite keys, list every property; to opt out, use `noTiebreaker()`:
 
 ```java
-Paginator.of(MemberSort.class, cfg -> cfg.tiebreaker("identityId"));
-Paginator.of(LineItemSort.class, cfg -> cfg.tiebreaker("orderId", "lineNo"));
-Paginator.of(EventSort.class, cfg -> cfg.noTiebreaker());
+Paginator.of(Member.class, MemberSort.class, cfg -> cfg.tiebreaker("identityId"));
+Paginator.of(LineItem.class, LineItemSort.class, cfg -> cfg.tiebreaker("orderId", "lineNo"));
+Paginator.of(Event.class, EventSort.class, cfg -> cfg.noTiebreaker());
 ```
 
 ### Searchable Repository
@@ -461,7 +467,7 @@ public interface ProductRepository extends SearchableRepository<Product, UUID> {
 @Service
 public class ProductService {
 
-    private static final Paginator PAGINATOR = Paginator.of(ProductSort.class);
+    private static final Paginator PAGINATOR = Paginator.of(Product.class, ProductSort.class);
 
     @Autowired
     private ProductRepository productRepository;
@@ -507,7 +513,7 @@ When an invalid sort field is provided, `Paginator` throws `UnknownSortByValueEx
 @Service
 public class ProductService {
 
-    private static final Paginator PAGINATOR = Paginator.of(ProductSort.class);
+    private static final Paginator PAGINATOR = Paginator.of(Product.class, ProductSort.class);
 
     @Autowired
     private ProductRepository productRepository;
@@ -757,7 +763,7 @@ public interface BookRepository extends SearchableRepository<Book, UUID> {
 @Service
 public class BookService {
 
-    private static final Paginator PAGINATOR = Paginator.of(BookSort.class);
+    private static final Paginator PAGINATOR = Paginator.of(Book.class, BookSort.class);
 
     @Autowired
     private BookRepository bookRepository;
