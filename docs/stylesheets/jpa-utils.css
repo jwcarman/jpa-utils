@@ -1,0 +1,71 @@
+/*
+ * jpa-utils-specific styles layered on the shared jwcarman theme: the page
+ * strip on the landing page. Three pages of one result set, each row a cell;
+ * rows that tie on the sort column share a group, and the id tiebreaker keeps
+ * every row on exactly one page. Static markup in index.md, no script.
+ */
+
+/* ---------- The page strip: one result set, paged ---------- */
+
+.jw-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 1.1rem 0 0.4rem;
+  font-family: var(--md-code-font-family);
+}
+
+.jw-page {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 7.5rem;
+  padding: 0.5rem 0.6rem 0.55rem;
+  border: 1px solid rgba(23, 27, 58, 0.25);
+  border-radius: 0.3rem;
+}
+
+[data-md-color-scheme="slate"] .jw-page {
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.jw-page__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.jw-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.2rem;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  background-color: rgba(58, 75, 199, 0.06);
+}
+
+.jw-row b {
+  font-weight: 600;
+}
+
+.jw-row i {
+  font-style: normal;
+  opacity: 0.75;
+}
+
+/* Rows that tie on the sort column: the case the tiebreaker exists for. */
+.jw-row.is-tied {
+  border-left: 3px solid var(--jw-signal);
+  background-color: rgba(242, 169, 59, 0.12);
+}
+
+.jw-pages__caption {
+  margin: 0 0 1.4rem;
+  font-family: var(--md-code-font-family);
+  font-size: 0.8rem;
+  opacity: 0.8;
+}

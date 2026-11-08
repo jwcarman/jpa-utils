@@ -41,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `clampPageSize()` helper method for consistent page size validation
 - Comprehensive test coverage for `defaultPageSize` edge cases
 
+### Documentation
+- A documentation site at https://jwcarman.github.io/jpa-utils/ (MkDocs Material, the shared jwcarman theme):
+  guides for entities, paging, stable paging, property validation, search, the web layer, databases, and
+  migrating to 0.1.0; each release's Javadoc under `/api/`. The README is now a short overview that links to it
+
 ### Fixed
 - `BaseEntity.equals`/`hashCode` with Hibernate lazy proxies: they were `final` and read the `id` field, which a
   proxy (a generated subclass) does not hold, so `getReference(...)` proxies were not equal to the loaded entity and

@@ -21,3 +21,6 @@ buildNumber.properties
 *.iml
 *.iws
 *.ipr
+# MkDocs build output and local browser screenshots
+/site/
+.playwright-mcp/

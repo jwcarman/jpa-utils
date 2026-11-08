@@ -1,0 +1,73 @@
+site_name: jpa-utils
+site_description: Stable paging, UUID v7 entities, and annotation-driven search for Jakarta Persistence and Spring Data JPA.
+site_url: https://jwcarman.github.io/jpa-utils/
+repo_url: https://github.com/jwcarman/jpa-utils
+repo_name: jwcarman/jpa-utils
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+
+validation:
+  anchors: warn
+  links:
+    absolute_links: warn
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  font:
+    text: Source Sans 3
+    code: JetBrains Mono
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+
+extra_css:
+  - stylesheets/jwcarman.css
+  - stylesheets/jpa-utils.css
+
+nav:
+  - Home: index.md
+  - Guides:
+      - Getting Started: guides/getting-started.md
+      - Entities: guides/entities.md
+      - Paging and Sorting: guides/paging.md
+      - Stable Paging: guides/stable-paging.md
+      - Property Validation: guides/property-validation.md
+      - Search: guides/search.md
+      - Web Layer: guides/web.md
+      - Databases and Performance: guides/databases.md
+      - Migrating to 0.1.0: guides/migrating-to-0.1.md
+  - Reference:
+      - API (Javadoc): https://jwcarman.github.io/jpa-utils/api/latest/
+      - Changelog: https://github.com/jwcarman/jpa-utils/blob/main/CHANGELOG.md
