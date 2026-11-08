@@ -169,10 +169,13 @@ public final class Paginator {
     private static void requireProperty(Class<?> entityType, String property, Supplier<String> subject) {
         try {
             PropertyPath.from(property, entityType);
-        } catch (PropertyReferenceException e) {
+        } catch (PropertyReferenceException _) {
+            // Not chained: Spring Data's message splits camelCase paths ("No property 'rnak' found for type
+            // 'String'; Traversed path: Member.role" for "roleRnak") and misleads more than it helps. This one
+            // names the enum constant, the path as written, and the entity.
             throw new IllegalArgumentException(String.format(
                     "%s, which is not a property of %s (use skipPropertyValidation() if the query sorts by something else)",
-                    subject.get(), entityType.getName()), e);
+                    subject.get(), entityType.getName()));
         }
     }
 

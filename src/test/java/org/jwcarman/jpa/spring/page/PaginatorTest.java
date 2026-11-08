@@ -398,7 +398,16 @@ class PaginatorTest {
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("TypoSort.LAST_NAME sorts by \"lastNmae\"")
                     .hasMessageContaining(Person.class.getName())
-                    .hasMessageContaining("skipPropertyValidation()");
+                    .hasMessageContaining("skipPropertyValidation()")
+                    .hasNoCause();
+        }
+
+        @Test
+        void reports_a_camel_case_typo_as_written_without_spring_data_s_split_path() {
+            assertThatThrownBy(() -> Paginator.of(Person.class, CamelTypoSort.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageStartingWith("CamelTypoSort.LAST_NAME sorts by \"lastNameX\", which is not a property of")
+                    .hasNoCause();
         }
 
         @Test
@@ -630,6 +639,15 @@ class PaginatorTest {
         @Override
         public String getSortProperty() {
             return sortProperty;
+        }
+    }
+
+    enum CamelTypoSort implements SortPropertyProvider {
+        LAST_NAME;
+
+        @Override
+        public String getSortProperty() {
+            return "lastNameX";
         }
     }
 
