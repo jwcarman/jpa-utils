@@ -17,12 +17,14 @@ Stable paging, UUID v7 entities, and annotation-driven search for
 
 **📖 Documentation: [jwcarman.github.io/jpa-utils](https://jwcarman.github.io/jpa-utils/) · API reference: [jwcarman.github.io/jpa-utils/api](https://jwcarman.github.io/jpa-utils/api/)**
 
-- **Stable paging**: every sort ends with a unique tiebreaker, so a row never repeats or vanishes across pages
-- **`Paginator`**: one configured object per listing turns a `PageSpec` into a `Pageable` and a `Page` into a `PageDto`
-- **Mistakes fail at startup**: sort properties and tiebreakers are checked against the entity when the paginator is built
-- **`BaseEntity`**: a UUID v7 id assigned at construction, optimistic locking, and `equals`/`hashCode` that hold for lazy proxies
-- **`@Searchable`**: case-insensitive search across the fields you mark, with SQL wildcards escaped
-- **A framework-free web contract**: `PageSpec` in, `PageDto` out; `PageParams` binds them in Spring MVC
+- **Stable paging.** Every sort ends with a unique tiebreaker, so a row never repeats or vanishes across pages.
+- **One object per listing.** A `Paginator` turns a `PageSpec` into a `Pageable`, and a `Page` back into a `PageDto`.
+- **Mistakes fail at startup.** Sort properties and tiebreakers are checked against the entity when the paginator is
+  built, not on every request.
+- **Entities with stable identity.** `BaseEntity` assigns a UUID v7 at construction, adds optimistic locking, and has
+  an `equals`/`hashCode` that holds for lazy proxies.
+- **Search by annotation.** Mark fields `@Searchable` for case-insensitive search, with SQL wildcards escaped.
+- **A framework-free web contract.** `PageSpec` in, `PageDto` out; `PageParams` binds them in Spring MVC.
 
 ## Requirements
 
