@@ -33,6 +33,7 @@
         <mysql-driver.version>26.10.0</mysql-driver.version>
         <oracle-driver.version>23.26.4.0.0</oracle-driver.version>
         <postgresql-driver.version>42.7.14</postgresql-driver.version>
+        <slf4j.version>2.0.20</slf4j.version>
         <spring.version>7.0.10</spring.version>
         <spring-boot.version>4.1.2</spring-boot.version>
         <spring-data.version>2026.0.2</spring-data.version>
@@ -128,6 +129,12 @@
                     <artifactId>slf4j-api</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <!-- Searchables logs through SLF4J; declared directly so the non-Spring packages work without Spring -->
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.data</groupId>

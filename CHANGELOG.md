@@ -47,6 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   migrating to 0.1.0; each release's Javadoc under `/api/`. The README is now a short overview that links to it
 
 ### Fixed
+- `slf4j-api` is now a direct dependency. `Searchables` logs through SLF4J, which previously arrived only through
+  the optional Spring Data dependency, so search without Spring failed with `NoClassDefFoundError`
 - `BaseEntity.equals`/`hashCode` with Hibernate lazy proxies: they were `final` and read the `id` field, which a
   proxy (a generated subclass) does not hold, so `getReference(...)` proxies were not equal to the loaded entity and
   hashed differently. They now read `getId()` and are no longer `final`; subclasses should still not override them
