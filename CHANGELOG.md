@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-14
+
 ### Breaking changes
 
 - **The tiebreaker follows the request's sort direction.** A descending request now ends with a descending
@@ -95,6 +97,7 @@ utilities with a configured `Paginator`, and makes paging stable. See
 Releases 0.0.1 through 0.0.12 predate this changelog; see the
 [GitHub releases](https://github.com/jwcarman/jpa-utils/releases).
 
-[Unreleased]: https://github.com/jwcarman/jpa-utils/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/jwcarman/jpa-utils/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/jwcarman/jpa-utils/releases/tag/0.2.0
 [0.1.0]: https://github.com/jwcarman/jpa-utils/releases/tag/0.1.0
 [0.0.12]: https://github.com/jwcarman/jpa-utils/releases/tag/0.0.12

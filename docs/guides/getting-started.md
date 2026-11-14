@@ -21,7 +21,7 @@ a service and a controller.
 <dependency>
     <groupId>org.jwcarman.jpa</groupId>
     <artifactId>jpa-utils</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
