@@ -101,7 +101,7 @@ public class PersonController {
 GET /api/people?query=smith&pageIndex=0&pageSize=20&sortBy=FIRST_NAME&sortDirection=DESC
 ```
 
-That request sorts by `first_name DESC, id ASC`; without `sortBy` it sorts by last name. The
+That request sorts by `first_name DESC, id DESC`; without `sortBy` it sorts by last name. The
 [Getting Started](https://jwcarman.github.io/jpa-utils/guides/getting-started/) guide walks through it in full.
 
 ## Upgrading from 0.0.x

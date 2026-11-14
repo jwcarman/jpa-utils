@@ -27,21 +27,23 @@ order, and each row lands on exactly one page:
 ORDER BY role ASC, id ASC
 ```
 
-`Paginator` does this for every `Pageable` it builds: the requested sort, then the tiebreaker, ascending.
+`Paginator` does this for every `Pageable` it builds: the requested sort, then the tiebreaker, in the same direction.
 
 | Request | ORDER BY |
 |---------|----------|
-| `sortBy=ROLE&sortDirection=DESC` | `role DESC, id ASC` |
+| `sortBy=ROLE&sortDirection=DESC` | `role DESC, id DESC` |
 | `sortBy=NAME` | `name ASC, id ASC` |
 | no `sortBy`, no default sort | `id ASC` |
+| no `sortBy`, no default sort, `sortDirection=DESC` | `id DESC` |
 | no `sortBy`, default sort `NAME` | `name ASC, id ASC` |
 | `sortBy=ID&sortDirection=DESC` (a constant whose property is `id`) | `id DESC` |
 
 Requests without a sort get the tiebreaker too: an unsorted page is just as unstable. A tiebreaker the request
 already sorts by isn't added again.
 
-The tiebreaker's direction makes no difference to stability, so it is always ascending. For `BaseEntity`'s
-UUID v7 ids that puts tied rows in creation order.
+The tiebreaker's direction makes no difference to stability, so it follows the request's: reversing a list
+reverses all of it. For `BaseEntity`'s UUID v7 ids, tied rows come in creation order when ascending and newest
+first when descending.
 
 ## Choosing the tiebreaker
 

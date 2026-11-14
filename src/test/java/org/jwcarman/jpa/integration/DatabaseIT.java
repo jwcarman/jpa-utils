@@ -19,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -264,7 +265,7 @@ public abstract class DatabaseIT {
             ).data());
         }
 
-        assertThat(seen).hasSize(30).doesNotHaveDuplicates().isSorted();
+        assertThat(seen).hasSize(30).doesNotHaveDuplicates().isSortedAccordingTo(Comparator.reverseOrder());
     }
 
     @Test

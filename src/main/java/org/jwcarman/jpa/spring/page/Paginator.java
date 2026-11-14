@@ -41,8 +41,8 @@ import java.util.function.Supplier;
  * <h2>Stable ordering</h2>
  * <p>SQL only orders rows whose sort values differ; rows that tie may come back in any order, and each page is a
  * separate query, so tied rows can repeat on one page and vanish from another. To prevent that, every
- * {@code Pageable} ends with a <em>tiebreaker</em>: one or more unique properties, sorted ascending, appended after
- * the requested sort (and used alone when nothing else is sorted). The default tiebreaker is {@code "id"}, the
+ * {@code Pageable} ends with a <em>tiebreaker</em>: one or more unique properties, sorted in the request's direction,
+ * appended after the requested sort (and used alone when nothing else is sorted). The default tiebreaker is {@code "id"}, the
  * identifier of {@link org.jwcarman.jpa.entity.BaseEntity}. Entities whose unique property is named differently
  * configure it with {@link Config#tiebreaker(String...)}; {@link Config#noTiebreaker()} opts out.</p>
  *
@@ -62,8 +62,8 @@ import java.util.function.Supplier;
  *       default.</li>
  *   <li>Otherwise only the tiebreaker (or unsorted, when the tiebreaker is disabled).</li>
  * </ol>
- * <p>The requested {@link PageSpec#sortDirection()} applies to the sort property (ascending when absent); the
- * tiebreaker is always ascending.</p>
+ * <p>The requested {@link PageSpec#sortDirection()} (ascending when absent) applies to the sort property and to the
+ * tiebreaker alike, so a descending list breaks its ties descending too: reversing a list reverses all of it.</p>
  *
  * <h2>Paging defaults</h2>
  * <ul>
@@ -296,16 +296,17 @@ public final class Paginator {
     }
 
     private Sort sortOf(String sortBy, SortDirection sortDirection) {
+        Sort.Direction direction = directionOf(sortDirection);
         Sort sort = Optional.ofNullable(sortBy)
                 .map(String::strip)
                 .filter(value -> !value.isEmpty())
                 .map(sortResolver)
                 .or(() -> Optional.ofNullable(defaultSort))
-                .map(provider -> Sort.by(directionOf(sortDirection), provider.getSortProperty()))
+                .map(provider -> Sort.by(direction, provider.getSortProperty()))
                 .orElseGet(Sort::unsorted);
         for (String property : tiebreaker) {
             if (sort.getOrderFor(property) == null) {
-                sort = sort.and(Sort.by(Sort.Direction.ASC, property));
+                sort = sort.and(Sort.by(direction, property));
             }
         }
         return sort;
@@ -332,8 +333,8 @@ public final class Paginator {
         }
 
         /**
-         * Sets the unique property (or properties, for a composite key) appended ascending as the final sort
-         * order. Defaults to {@value Paginator#DEFAULT_TIEBREAKER}. The properties together must be unique, or
+         * Sets the unique property (or properties, for a composite key) appended as the final sort order, in the
+         * request's direction. Defaults to {@value Paginator#DEFAULT_TIEBREAKER}. The properties together must be unique, or
          * ties remain.
          *
          * @param properties JPA property paths, e.g. {@code "identityId"} or {@code "order.id", "lineNo"}

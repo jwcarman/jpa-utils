@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Breaking changes
+
+- **The tiebreaker follows the request's sort direction.** A descending request now ends with a descending
+  tiebreaker (`role DESC, id DESC`, was `role DESC, id ASC`), and a request with no `sortBy` but
+  `sortDirection=DESC` sorts by the tiebreaker descending. With `BaseEntity`'s UUID v7 ids, a newest-first list
+  now shows tied rows newest first too. Pages stay stable either way; only the order of tied rows changes.
+
 ## [0.1.0] - 2026-11-08
 
 The first minor-version release. It moves to Java 25 and Spring Boot 4, replaces the static `Pageables`/`Pages`

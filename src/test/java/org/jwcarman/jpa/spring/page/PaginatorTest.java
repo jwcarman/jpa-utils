@@ -51,10 +51,10 @@ class PaginatorTest {
         }
 
         @Test
-        void sorts_descending_by_the_requested_property_with_an_ascending_tiebreaker() {
+        void sorts_descending_by_the_requested_property_then_a_descending_tiebreaker() {
             Pageable pageable = DEFAULTS.pageableOf(spec(0, 10, "LAST_NAME", SortDirection.DESC));
 
-            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), asc("id"));
+            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), desc("id"));
         }
 
         @Test
@@ -69,6 +69,13 @@ class PaginatorTest {
             Pageable pageable = DEFAULTS.pageableOf(spec(0, 10, null, null));
 
             assertThat(ordersOf(pageable)).containsExactly(asc("id"));
+        }
+
+        @Test
+        void sorts_by_the_tiebreaker_alone_in_the_requested_direction() {
+            Pageable pageable = DEFAULTS.pageableOf(spec(0, 10, null, SortDirection.DESC));
+
+            assertThat(ordersOf(pageable)).containsExactly(desc("id"));
         }
 
         @Test
@@ -93,7 +100,7 @@ class PaginatorTest {
         void ignores_whitespace_around_sort_by() {
             Pageable pageable = DEFAULTS.pageableOf(spec(0, 10, "  LAST_NAME ", SortDirection.DESC));
 
-            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), asc("id"));
+            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), desc("id"));
         }
 
         @Test
@@ -133,7 +140,7 @@ class PaginatorTest {
 
             Pageable pageable = paginator.pageableOf(spec(0, 10, "LAST_NAME", SortDirection.DESC));
 
-            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), asc("orderId"), asc("lineNo"));
+            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), desc("orderId"), desc("lineNo"));
         }
 
         @Test
@@ -142,7 +149,7 @@ class PaginatorTest {
 
             Pageable pageable = paginator.pageableOf(spec(0, 10, "LAST_NAME", SortDirection.DESC));
 
-            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), asc("id"));
+            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), desc("id"));
         }
 
         @Test
@@ -190,14 +197,14 @@ class PaginatorTest {
         void is_used_when_sort_by_is_blank() {
             Pageable pageable = paginator.pageableOf(spec(0, 10, "  ", SortDirection.DESC));
 
-            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), asc("id"));
+            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), desc("id"));
         }
 
         @Test
         void follows_the_requested_direction() {
             Pageable pageable = paginator.pageableOf(spec(0, 10, null, SortDirection.DESC));
 
-            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), asc("id"));
+            assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), desc("id"));
         }
 
         @Test
@@ -524,7 +531,7 @@ class PaginatorTest {
             assertThat(received).singleElement().satisfies(pageable -> {
                 assertThat(pageable.getPageNumber()).isEqualTo(2);
                 assertThat(pageable.getPageSize()).isEqualTo(5);
-                assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), asc("id"));
+                assertThat(ordersOf(pageable)).containsExactly(desc("lastName"), desc("id"));
             });
         }
 

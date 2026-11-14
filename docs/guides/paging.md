@@ -99,7 +99,7 @@ above the maximum, say) fails then, not on a request.
 | the whole spec `null` | as if every value were absent |
 
 `sortBy` ignores surrounding whitespace but is case-sensitive: `LAST_NAME` matches, `last_name` doesn't. The
-direction applies to the sort property; the tiebreaker is always ascending.
+direction applies to the sort property and to the tiebreaker alike.
 
 ## Running a query
 

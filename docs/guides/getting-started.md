@@ -155,5 +155,5 @@ GET /api/people?query=smith&pageIndex=0&pageSize=20&sortBy=FIRST_NAME&sortDirect
 }
 ```
 
-The query that ran sorts by `first_name DESC, id ASC`: the requested sort, then the [tiebreaker](stable-paging.md)
+The query that ran sorts by `first_name DESC, id DESC`: the requested sort, then the [tiebreaker](stable-paging.md)
 that keeps pages stable. A request without `sortBy` sorts by last name, the configured default.
