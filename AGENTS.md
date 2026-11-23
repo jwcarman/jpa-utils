@@ -62,8 +62,9 @@ mvn -Pci verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.p
 - `PageDto` and `PaginationDto`: DTOs for pagination responses
 
 **`org.jwcarman.jpa.search`**
-- `@Searchable`: Annotation to mark entity fields/getters as searchable
-- `Searchables`: Utility class that builds JPA Criteria API predicates for case-insensitive LIKE searches across all @Searchable String fields
+- `@Searchable`: Annotation to mark entity fields/getters as searchable; `match` picks a `MatchMode`
+- `MatchMode`: `CONTAINS` (default, `LIKE '%w%'`), `PREFIX` (`LIKE 'w%'`), `EXACT` (`=`)
+- `Searchables`: Utility class that builds JPA Criteria API predicates for case-insensitive, word-by-word searches across all @Searchable String fields, each by its match mode
 - Automatically sanitizes search terms to escape SQL wildcards
 
 **`org.jwcarman.jpa.spring.page`**
