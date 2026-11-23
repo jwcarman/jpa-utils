@@ -18,8 +18,8 @@ configured tiebreaker, and lazy-proxy equality. The unit tests use H2.
 
 ## Query plan caching
 
-Search terms are bound as parameters, so every search against an entity has the same SQL text and reuses one
-cached plan in Hibernate and in the database:
+Search terms are bound as parameters, so every search against an entity with the same number of words has the
+same SQL text and reuses one cached plan in Hibernate and in the database:
 
 ```sql
 WHERE LOWER(first_name) LIKE ? ESCAPE '\' OR LOWER(last_name) LIKE ? ESCAPE '\'
@@ -27,12 +27,10 @@ WHERE LOWER(first_name) LIKE ? ESCAPE '\' OR LOWER(last_name) LIKE ? ESCAPE '\'
 
 The set of searchable fields is found by reflection once per entity type and cached.
 
-Hibernate's default literal handling binds strings and inlines numbers. If your own Criteria queries add numeric
-or date conditions, binding every literal keeps their plans shared too:
-
-```properties
-spring.jpa.properties.hibernate.criteria.literal_handling_mode=BIND
-```
+Hibernate 7 binds every Criteria value as a parameter by default (`hibernate.criteria.value_handling_mode=BIND`),
+so your own Criteria conditions share plans too. Leave it at `BIND`: `INLINE` writes values into the SQL text,
+which gives every search its own plan and makes search safety depend on Hibernate's quoting (see
+[Search](search.md)).
 
 ## Indexes for listings
 

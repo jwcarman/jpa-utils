@@ -85,17 +85,25 @@ So `john smith` and `smith john` both find John Smith, even though the words are
 `john brown` finds nobody unless someone matches both words. Each field uses its own match mode, so with `lastName`
 as `PREFIX` and `state` as `EXACT`, `smi oh` finds Smiths in Ohio.
 
-- **Case-insensitive**: both sides are lowercased.
+- **Case-insensitive**: both sides are lowercased; the words in Java with `Locale.ROOT`, the column by the
+  database's `LOWER()`. For some non-English letters (Turkish `İ`) the two can differ, and a word then doesn't
+  match.
 - **Per field**: each word is matched against each field by that field's mode: anywhere (`CONTAINS`), at the
   start (`PREFIX`), or the whole value (`EXACT`).
 - **Literal**: `%`, `_` and `\` in a word are escaped for `CONTAINS` and `PREFIX`, so `50%` matches the text "50%",
   not "50 and anything". `EXACT` compares with `=`, where they have no special meaning.
-- **Bounded**: duplicate words count once, and only the first 10 words are used (`Searchables.MAX_SEARCH_WORDS`),
-  so a pasted paragraph can't build an enormous query.
+- **Words**: words are separated by whitespace, Unicode spaces (a non-breaking space pasted from a web page),
+  control characters (tab, NUL) and invisible format characters (zero-width space, byte-order mark). None of these
+  reach the database, so a stray NUL can't make PostgreSQL reject the query. A term made only of them is blank.
+- **Bounded**: duplicate words count once, only the first 10 words are used (`Searchables.MAX_SEARCH_WORDS`), and
+  each word is cut to 100 characters (`Searchables.MAX_WORD_LENGTH`), so a pasted paragraph can't build an enormous
+  query.
 - **Absent terms match everything**: a `null` or blank term adds no condition.
 - **No searchable fields matches everything** too, and logs a warning once for that entity type.
 
-The words are bound as parameters, never concatenated into SQL.
+The words are bound as parameters, never concatenated into SQL. That relies on Hibernate's default
+`hibernate.criteria.value_handling_mode=BIND`; don't set it to `INLINE` in an application that searches browser
+input, because Hibernate then writes the words into the SQL as quoted literals.
 
 ## Combining search with other conditions
 
@@ -150,7 +158,8 @@ branch. A single `CONTAINS` field makes the whole search scan the table.
 For large tables with free-text needs, consider a database full-text index (PostgreSQL `tsvector`, MySQL
 `FULLTEXT`) behind a custom query.
 
-Bound the length of search terms at the controller, since a very long pattern is wasted work for the database:
+The library caps a search at 10 words of 100 characters, but still bound the length of the term at the
+controller, so an oversized request is rejected before any work is done:
 
 ```java
 @GetMapping
@@ -162,3 +171,7 @@ public PageDto<ArticleDto> search(
 ```
 
 Around 100 to 200 characters covers ordinary searches; never leave it unbounded.
+
+The rest of the cost is the application's to manage: every search over a `CONTAINS` field scans the table (plus a
+count query for each page), a one-letter term matches most rows, and a blank term matches all of them. Always page
+search results, and consider a minimum term length or rate limiting for public endpoints.

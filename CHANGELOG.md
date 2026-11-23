@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `CONTAINS` stays the default, so existing entities are unchanged. Indexes help only when every searchable field
   of an entity is `PREFIX` or `EXACT`; see [Search](https://jwcarman.github.io/jpa-utils/guides/search/).
 
+### Changed
+
+- **Search words are cleaned before they reach the database.** Unicode spaces (such as a pasted non-breaking
+  space), control characters (such as NUL) and invisible format characters (such as a zero-width space) now separate
+  words instead of being part of them, so `john smith` with a non-breaking space finds John Smith and a stray NUL
+  no longer makes PostgreSQL reject the query. Each word is cut to 100 characters
+  (`Searchables.MAX_WORD_LENGTH`).
+
 ## [0.2.0] - 2026-11-14
 
 ### Breaking changes
