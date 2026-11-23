@@ -8,6 +8,9 @@ import org.jwcarman.jpa.pagination.SortDirection;
 import org.jwcarman.jpa.spring.page.Paginator;
 import org.jwcarman.jpa.spring.search.SearchableRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayNameGeneration;
+import org.junit.jupiter.api.DisplayNameGenerator;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -59,9 +62,9 @@ public abstract class DatabaseIT {
         personRepository.deleteAll();
 
         // Create test data with predictable ordering
-        personRepository.save(new TestPerson("Alice", "Anderson", "alice@example.com"));
-        personRepository.save(new TestPerson("Bob", "Brown", "bob@example.com"));
-        personRepository.save(new TestPerson("Charlie", "Chen", "charlie@example.com"));
+        personRepository.save(new TestPerson("Alice", "Anderson", "alice@example.com", "Columbus", "OH"));
+        personRepository.save(new TestPerson("Bob", "Brown", "bob@example.com", "Cleveland", "OH"));
+        personRepository.save(new TestPerson("Charlie", "Chen", "charlie@example.com", "Austin", "TX"));
         personRepository.save(new TestPerson("Diana", "Davis", "diana@example.com"));
         personRepository.save(new TestPerson("Eve", "Evans", "eve@example.com"));
         personRepository.save(new TestPerson("Frank", "Fisher", "frank@example.com"));
@@ -280,6 +283,45 @@ public abstract class DatabaseIT {
         assertThat(proxy).isEqualTo(saved);
         assertThat(saved).isEqualTo(proxy);
         assertThat(proxy).hasSameHashCodeAs(saved);
+    }
+
+    private List<String> lastNamesFor(String term) {
+        return personRepository.search(term, Pageable.unpaged()).map(TestPerson::getLastName).getContent();
+    }
+
+    @Nested
+    @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
+    class Match_modes {
+
+        @Test
+        void finds_by_city_prefix() {
+            assertThat(lastNamesFor("clev")).containsExactly("Brown");
+        }
+
+        @Test
+        void does_not_match_the_middle_of_a_prefix_field() {
+            assertThat(lastNamesFor("eveland")).isEmpty();
+        }
+
+        @Test
+        void finds_by_exact_state_ignoring_case() {
+            assertThat(lastNamesFor("oh")).containsExactlyInAnyOrder("Anderson", "Brown");
+        }
+
+        @Test
+        void treats_wildcards_in_an_exact_word_literally() {
+            assertThat(lastNamesFor("o_")).isEmpty();
+        }
+
+        @Test
+        void matches_each_word_by_its_field_mode() {
+            assertThat(lastNamesFor("bob oh")).containsExactly("Brown");
+        }
+
+        @Test
+        void excludes_a_row_missing_any_word() {
+            assertThat(lastNamesFor("charlie oh")).isEmpty();
+        }
     }
 
     record TestPageSpec(
