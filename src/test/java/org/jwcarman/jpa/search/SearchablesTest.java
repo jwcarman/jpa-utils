@@ -176,6 +176,51 @@ class SearchablesTest {
         void keep_wildcard_characters_for_escaping_later() {
             assertThat(Searchables.wordsOf("50% off_")).containsExactly("50%", "off_");
         }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"john smith", "john smith", "john　smith", "john smith", "john\u0085smith"})
+        void split_on_unicode_spaces_and_line_separators(String term) {
+            assertThat(Searchables.wordsOf(term)).containsExactly("john", "smith");
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"john\u0000smith", "john\u001Bsmith", "john​smith", "﻿john​smith​"})
+        void split_on_control_and_invisible_format_characters(String term) {
+            assertThat(Searchables.wordsOf(term)).containsExactly("john", "smith");
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"\u0000", "​", "﻿", " ", "​ ﻿\u0000"})
+        void are_none_for_a_term_of_only_separators(String term) {
+            assertThat(Searchables.wordsOf(term)).isEmpty();
+        }
+
+        @Test
+        void are_cut_to_the_maximum_length() {
+            assertThat(Searchables.wordsOf("x".repeat(10_000)))
+                    .containsExactly("x".repeat(Searchables.MAX_WORD_LENGTH));
+        }
+
+        @Test
+        void are_cut_by_code_point_so_no_surrogate_pair_is_split() {
+            String emoji = "😀";
+
+            assertThat(Searchables.wordsOf(emoji.repeat(Searchables.MAX_WORD_LENGTH + 1)))
+                    .containsExactly(emoji.repeat(Searchables.MAX_WORD_LENGTH));
+        }
+
+        @Test
+        void keep_a_word_of_exactly_the_maximum_length() {
+            assertThat(Searchables.wordsOf("y".repeat(Searchables.MAX_WORD_LENGTH)))
+                    .containsExactly("y".repeat(Searchables.MAX_WORD_LENGTH));
+        }
+
+        @Test
+        void drop_duplicates_after_cutting() {
+            String longWord = "z".repeat(Searchables.MAX_WORD_LENGTH);
+
+            assertThat(Searchables.wordsOf(longWord + "a " + longWord + "b")).containsExactly(longWord);
+        }
     }
 
     private static SingularAttribute<?, ?> attribute(String name, Class<?> javaType, Member javaMember) {

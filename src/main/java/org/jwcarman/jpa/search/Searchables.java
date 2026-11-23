@@ -24,7 +24,9 @@ import java.util.regex.Pattern;
  *
  * <p>The words reach the database as bind parameters, never as SQL text: the predicate is built with the Criteria
  * API, and Hibernate binds Criteria values as parameters by default ({@code hibernate.criteria.value_handling_mode}
- * is {@code BIND}). An application that sets that mode to {@code INLINE} gets escaped literals instead.</p>
+ * is {@code BIND}). Don't set that mode to {@code INLINE} for searches over browser input: Hibernate then writes
+ * the words into the SQL as quoted literals, and safety rests on its quoting matching how the database reads
+ * backslashes (PostgreSQL's {@code standard_conforming_strings}, MySQL's {@code NO_BACKSLASH_ESCAPES}).</p>
  *
  * <h2>Key Features</h2>
  * <ul>
@@ -202,7 +204,18 @@ public final class Searchables {
      */
     public static final int MAX_SEARCH_WORDS = 10;
 
-    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+    /**
+     * The most characters (code points) of a word that are matched; a longer word is cut to this length, bounding the
+     * size of each bound value.
+     */
+    public static final int MAX_WORD_LENGTH = 100;
+
+    /**
+     * What separates words: any whitespace, Unicode space or line separator ({@code \p{Z}}, e.g. a non-breaking
+     * space), control character ({@code \p{Cc}}, e.g. tab or NUL) or invisible format character ({@code \p{Cf}},
+     * e.g. a zero-width space or byte-order mark). None of them ever reaches the database.
+     */
+    private static final Pattern SEPARATORS = Pattern.compile("[\\p{Z}\\p{Cc}\\p{Cf}]+");
 
 // --------------------------- CONSTRUCTORS ---------------------------
 
@@ -262,21 +275,28 @@ public final class Searchables {
     }
 
     /**
-     * Splits a search term into the words that are matched: lowercased, without duplicates, in order, at most
-     * {@value #MAX_SEARCH_WORDS}.
+     * Splits a search term into the words that are matched: separated by whitespace, Unicode spaces, control and
+     * invisible format characters; lowercased; cut to {@value #MAX_WORD_LENGTH} code points; without duplicates; in
+     * order; at most {@value #MAX_SEARCH_WORDS}.
      *
      * @param searchTerm the search term, may be null or blank
-     * @return the words, empty for a null or blank term
+     * @return the words, empty for a null term or one made only of separators
      */
     static List<String> wordsOf(String searchTerm) {
-        if (searchTerm == null || searchTerm.isBlank()) {
+        if (searchTerm == null) {
             return List.of();
         }
-        return WHITESPACE.splitAsStream(searchTerm.strip())
-                .map(word -> word.toLowerCase(Locale.ROOT))
+        return SEPARATORS.splitAsStream(searchTerm)
+                .filter(word -> !word.isEmpty())
+                .map(word -> cut(word.toLowerCase(Locale.ROOT)))
                 .distinct()
                 .limit(MAX_SEARCH_WORDS)
                 .toList();
+    }
+
+    private static String cut(String word) {
+        final int codePoints = Math.min(MAX_WORD_LENGTH, word.codePointCount(0, word.length()));
+        return word.substring(0, word.offsetByCodePoints(0, codePoints));
     }
 
     /**
