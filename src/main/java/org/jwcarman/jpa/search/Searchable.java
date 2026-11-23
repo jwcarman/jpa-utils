@@ -9,8 +9,10 @@ import java.lang.annotation.Target;
  * Marks a field or getter method as searchable, enabling it to be automatically included in search queries.
  *
  * <p>When a field or method is annotated with {@code @Searchable}, the {@link Searchables} utility will
- * automatically include it in case-insensitive LIKE queries generated via
- * {@link Searchables#createSearchPredicate(String, jakarta.persistence.criteria.Root, jakarta.persistence.criteria.CriteriaBuilder)}.</p>
+ * automatically include it in the case-insensitive queries generated via
+ * {@link Searchables#createSearchPredicate(String, jakarta.persistence.criteria.Root, jakarta.persistence.criteria.CriteriaBuilder)}.
+ * Each field matches according to its {@link #match() match mode}: {@link MatchMode#CONTAINS} (the default),
+ * {@link MatchMode#PREFIX} or {@link MatchMode#EXACT}.</p>
  *
  * <p>This annotation-driven approach eliminates the need to manually build search specifications for
  * each entity, providing a declarative way to define which fields should be searchable.</p>
@@ -20,8 +22,9 @@ import java.lang.annotation.Target;
  *
  * <h2>Target Elements</h2>
  * <ul>
- *   <li><strong>FIELD:</strong> Applied directly to entity fields</li>
- *   <li><strong>METHOD:</strong> Applied to getter methods (useful with Lombok)</li>
+ *   <li><strong>FIELD:</strong> Applied directly to entity fields (field access, the usual case)</li>
+ *   <li><strong>METHOD:</strong> Applied to getter methods, for an entity that uses property access
+ *       ({@code @Id} on a getter). On a field-access entity an annotated getter is not seen.</li>
  * </ul>
  *
  * <h2>Usage Examples</h2>
@@ -68,6 +71,19 @@ import java.lang.annotation.Target;
  * }
  * }</pre>
  *
+ * <h3>Choosing a Match Mode</h3>
+ * <pre>{@code
+ * @Entity
+ * public class Customer extends BaseEntity {
+ *
+ *     @Searchable(match = MatchMode.PREFIX)
+ *     private String lastName;       // LOWER(last_name) LIKE 'smi%'
+ *
+ *     @Searchable(match = MatchMode.EXACT)
+ *     private String state;          // LOWER(state) = 'oh'
+ * }
+ * }</pre>
+ *
  * <h3>Using with SearchableRepository</h3>
  * <pre>{@code
  * @Repository
@@ -91,10 +107,8 @@ import java.lang.annotation.Target;
  *     }
  * }
  *
- * // Example: search("john") will match:
- * //   - firstName contains "john"
- * //   - lastName contains "john"
- * //   - email contains "john"
+ * // Example: search("john smith") matches a row when "john" is in firstName, lastName or email,
+ * // AND "smith" is in firstName, lastName or email.
  * }</pre>
  *
  * <h3>Manual Usage with Searchables Utility</h3>
@@ -118,30 +132,33 @@ import java.lang.annotation.Target;
  * }
  * }</pre>
  *
- * <h3>Using on Getter Methods (with Lombok)</h3>
+ * <h3>Using on Getter Methods (Property Access)</h3>
  * <pre>{@code
  * @Entity
- * @Getter
- * public class Article extends BaseEntity {
+ * public class Article {
  *
- *     @Searchable
+ *     private String id;
  *     private String title;
  *
+ *     @Id
+ *     public String getId() { return id; }
+ *
  *     @Searchable
- *     private String author;
+ *     public String getTitle() { return title; }
  *
- *     private String content;  // NOT searchable
- *
- *     // Lombok generates getters, @Searchable is on the field
+ *     // setters...
  * }
  * }</pre>
  *
  * <h2>Search Behavior</h2>
  * <ul>
  *   <li><strong>Case-Insensitive:</strong> All searches are case-insensitive</li>
- *   <li><strong>Partial Match:</strong> Uses SQL LIKE with wildcards (e.g., {@code %john%})</li>
- *   <li><strong>OR Logic:</strong> Matches if the search term appears in ANY searchable field</li>
- *   <li><strong>Wildcard Escaping:</strong> Special characters ({@code %}, {@code _}, {@code \}) are escaped</li>
+ *   <li><strong>Per-Field Mode:</strong> Each field matches by its {@link #match()} mode; {@link MatchMode#CONTAINS}
+ *       uses SQL LIKE with wildcards on both sides (e.g., {@code %john%})</li>
+ *   <li><strong>Word by Word:</strong> The term is split on whitespace; a row matches when every word matches at
+ *       least one searchable field</li>
+ *   <li><strong>Wildcard Escaping:</strong> Special characters ({@code %}, {@code _}, {@code \}) are escaped for
+ *       {@link MatchMode#CONTAINS} and {@link MatchMode#PREFIX}; {@link MatchMode#EXACT} compares with {@code =}</li>
  *   <li><strong>Null-Safe:</strong> Null or blank search terms return all results</li>
  * </ul>
  *
@@ -158,7 +175,9 @@ import java.lang.annotation.Target;
  * <ul>
  *   <li>Only works with String fields/methods</li>
  *   <li>Does not support searching across relationships (use custom specifications for that)</li>
- *   <li>Uses simple LIKE queries (consider full-text search for advanced use cases)</li>
+ *   <li>Uses simple LIKE and equality queries (consider full-text search for advanced use cases)</li>
+ *   <li>Indexes help only when every searchable field on the entity is {@link MatchMode#PREFIX} or
+ *       {@link MatchMode#EXACT}; see {@link MatchMode}</li>
  * </ul>
  *
  * @see Searchables
@@ -167,4 +186,11 @@ import java.lang.annotation.Target;
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Searchable {
+
+    /**
+     * How this field matches each word of a search term.
+     *
+     * @return the match mode, {@link MatchMode#CONTAINS} by default
+     */
+    MatchMode match() default MatchMode.CONTAINS;
 }

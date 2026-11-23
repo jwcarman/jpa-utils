@@ -11,15 +11,20 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
  * Utility class for building JPA Criteria API predicates based on fields marked with {@link Searchable}.
  *
- * <p>This utility automatically generates case-insensitive LIKE predicates for all String fields
- * or methods annotated with {@code @Searchable}: every word of the search term must appear in at least one of them.
- * It handles SQL wildcard escaping and provides null-safe operation.</p>
+ * <p>This utility automatically generates case-insensitive predicates for all String fields
+ * or methods annotated with {@code @Searchable}: every word of the search term must match at least one of them,
+ * each field according to its {@link MatchMode}. It handles SQL wildcard escaping and provides null-safe operation.</p>
+ *
+ * <p>The words reach the database as bind parameters, never as SQL text: the predicate is built with the Criteria
+ * API, and Hibernate binds Criteria values as parameters by default ({@code hibernate.criteria.value_handling_mode}
+ * is {@code BIND}). An application that sets that mode to {@code INLINE} gets escaped literals instead.</p>
  *
  * <h2>Key Features</h2>
  * <ul>
@@ -163,7 +168,9 @@ import java.util.regex.Pattern;
  * <h2>Performance Considerations</h2>
  * <ul>
  *   <li><strong>Database Indexes:</strong> LIKE queries with leading wildcards ({@code %term%}) cannot use indexes efficiently</li>
- *   <li><strong>Query Size:</strong> The predicate has one LIKE per word per {@code @Searchable} field</li>
+ *   <li><strong>Query Size:</strong> The predicate has one comparison per word per {@code @Searchable} field</li>
+ *   <li><strong>Match Modes:</strong> {@link MatchMode#PREFIX} and {@link MatchMode#EXACT} can use an index on
+ *       {@code LOWER(column)}, but only when every searchable field of the entity uses one of them</li>
  *   <li><strong>Full-Text Search:</strong> For large text fields or complex search requirements, consider database-specific full-text search</li>
  *   <li><strong>Pagination:</strong> Always use pagination to limit result sets</li>
  * </ul>
@@ -186,9 +193,9 @@ public final class Searchables {
 
     /**
      * Cache of searchable attributes per entity type to avoid repeated reflection operations.
-     * Key: Entity Class, Value: List of searchable String attribute names
+     * Key: Entity Class, Value: the searchable String attributes with their match modes
      */
-    private static final ConcurrentHashMap<Class<?>, List<String>> SEARCHABLE_ATTRIBUTES_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class<?>, List<SearchableAttribute>> SEARCHABLE_ATTRIBUTES_CACHE = new ConcurrentHashMap<>();
 
     /**
      * The most words of a search term that are matched; any beyond are ignored, bounding the size of the query.
@@ -219,6 +226,10 @@ public final class Searchables {
      *   <li>Otherwise → an AND, over the words, of an OR over the searchable fields</li>
      * </ul>
      *
+     * <p><strong>Per Mode:</strong> {@link MatchMode#CONTAINS} → {@code LOWER(col) LIKE '%word%' ESCAPE '\'};
+     * {@link MatchMode#PREFIX} → {@code LOWER(col) LIKE 'word%' ESCAPE '\'}; {@link MatchMode#EXACT} →
+     * {@code LOWER(col) = 'word'}.</p>
+     *
      * <p><strong>Search Pattern:</strong></p>
      * <pre>{@code
      * // Input: "john smith"
@@ -238,18 +249,15 @@ public final class Searchables {
             return builder.conjunction(); // No filtering if searchTerm is empty/null
         }
 
-        final var attributeNames = getSearchableAttributeNames(root.getJavaType(), root.getModel());
-        if (attributeNames.isEmpty()) {
+        final var attributes = getSearchableAttributes(root.getJavaType(), root.getModel());
+        if (attributes.isEmpty()) {
             return builder.conjunction();
         }
 
         return builder.and(words.stream()
-                .map(word -> {
-                    final String pattern = "%" + sanitizeSearchTerm(word) + "%";
-                    return builder.or(attributeNames.stream()
-                            .map(attributeName -> like(root, builder, attributeName, pattern))
-                            .toArray(Predicate[]::new));
-                })
+                .map(word -> builder.or(attributes.stream()
+                        .map(attribute -> matches(root, builder, attribute, word))
+                        .toArray(Predicate[]::new)))
                 .toArray(Predicate[]::new));
     }
 
@@ -272,40 +280,49 @@ public final class Searchables {
     }
 
     /**
-     * Gets the names of searchable attributes for the given entity type, using a cache to avoid repeated reflection.
+     * Gets the searchable attributes of the given entity type, using a cache to avoid repeated reflection.
      *
      * @param entityClass the entity class to use as cache key
      * @param entityType the entity type to inspect
-     * @return list of searchable String attribute names (may be empty but never null)
+     * @return the searchable String attributes with their match modes (may be empty but never null)
      */
-    private static List<String> getSearchableAttributeNames(Class<?> entityClass, EntityType<?> entityType) {
+    private static List<SearchableAttribute> getSearchableAttributes(Class<?> entityClass, EntityType<?> entityType) {
         return SEARCHABLE_ATTRIBUTES_CACHE.computeIfAbsent(entityClass, clazz ->
                 {
-                    List<String> searchableAttributeNames = entityType.getSingularAttributes().stream()
+                    List<SearchableAttribute> searchableAttributes = entityType.getSingularAttributes().stream()
                             .filter(attribute -> String.class.equals(attribute.getJavaType()))
-                            .filter(Searchables::isSearchable)
-                            .map(SingularAttribute::getName)
+                            .flatMap(attribute -> searchableOf(attribute).stream()
+                                    .map(searchable -> new SearchableAttribute(attribute.getName(), searchable.match())))
                             .toList();
-                    if (searchableAttributeNames.isEmpty()) {
+                    if (searchableAttributes.isEmpty()) {
                         log.warn("No searchable attributes found for {}", entityType.getName());
                     }
-                    return searchableAttributeNames;
+                    return searchableAttributes;
                 }
         );
     }
 
-    private static Predicate like(Root<?> root, CriteriaBuilder builder, String attributeName, String pattern) {
-        final var path = root.get(attributeName).as(String.class);
-        final var lower = builder.lower(path);
-        return builder.like(lower, pattern, '\\');
+    private static Predicate matches(Root<?> root, CriteriaBuilder builder, SearchableAttribute attribute, String word) {
+        final var lower = builder.lower(root.get(attribute.name()).as(String.class));
+        return switch (attribute.match()) {
+            case CONTAINS -> builder.like(lower, "%" + sanitizeSearchTerm(word) + "%", '\\');
+            case PREFIX -> builder.like(lower, sanitizeSearchTerm(word) + "%", '\\');
+            case EXACT -> builder.equal(lower, word);
+        };
     }
 
-    private static boolean isSearchable(SingularAttribute<?, ?> attribute) {
-        return switch (attribute.getJavaMember()) {
-            case Method m -> m.isAnnotationPresent(Searchable.class);
-            case Field f -> f.isAnnotationPresent(Searchable.class);
-            case null, default -> false;
-        };
+    private static Optional<Searchable> searchableOf(SingularAttribute<?, ?> attribute) {
+        return Optional.ofNullable(switch (attribute.getJavaMember()) {
+            case Method m -> m.getAnnotation(Searchable.class);
+            case Field f -> f.getAnnotation(Searchable.class);
+            case null, default -> null;
+        });
+    }
+
+    /**
+     * A searchable attribute of an entity type: its name and how it matches.
+     */
+    private record SearchableAttribute(String name, MatchMode match) {
     }
 
     private static String sanitizeSearchTerm(String searchTerm) {

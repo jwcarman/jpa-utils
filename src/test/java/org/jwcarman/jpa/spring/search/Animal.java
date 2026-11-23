@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Version;
 import lombok.NoArgsConstructor;
+import org.jwcarman.jpa.search.MatchMode;
 import org.jwcarman.jpa.search.Searchable;
 
 import java.util.UUID;
@@ -13,6 +14,7 @@ import java.util.UUID;
 public class Animal {
     private String id = UUID.randomUUID().toString();
     private String name;
+    private String species;
     private Long version;
     @Id
     public String getId() {
@@ -30,6 +32,15 @@ public class Animal {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    @Searchable(match = MatchMode.EXACT)
+    public String getSpecies() {
+        return species;
+    }
+
+    public void setSpecies(String species) {
+        this.species = species;
     }
 
     @Version
