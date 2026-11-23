@@ -95,11 +95,15 @@ as `PREFIX` and `state` as `EXACT`, `smi oh` finds Smiths in Ohio.
 - **Words**: words are separated by whitespace, Unicode spaces (a non-breaking space pasted from a web page),
   control characters (tab, NUL) and invisible format characters (zero-width space, byte-order mark). None of these
   reach the database, so a stray NUL can't make PostgreSQL reject the query. A term made only of them is blank.
+  The zero-width non-joiner and joiner are the exception: they are part of words in Persian, Indic scripts and emoji
+  sequences, so they stay inside words.
 - **Bounded**: duplicate words count once, only the first 10 words are used (`Searchables.MAX_SEARCH_WORDS`), and
   each word is cut to 100 characters (`Searchables.MAX_WORD_LENGTH`), so a pasted paragraph can't build an enormous
-  query.
+  query. The cut means an `EXACT` field holding a value longer than 100 characters can't be found by searching for
+  it; use `PREFIX` for long values such as tokens.
 - **Absent terms match everything**: a `null` or blank term adds no condition.
-- **No searchable fields matches everything** too, and logs a warning once for that entity type.
+- **No searchable fields matches everything** too, and logs a warning once for that entity type (once per
+  `EntityManagerFactory`, if there are several).
 
 The words are bound as parameters, never concatenated into SQL. That relies on Hibernate's default
 `hibernate.criteria.value_handling_mode=BIND`; don't set it to `INLINE` in an application that searches browser

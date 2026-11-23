@@ -20,8 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Search words are cleaned before they reach the database.** Unicode spaces (such as a pasted non-breaking
   space), control characters (such as NUL) and invisible format characters (such as a zero-width space) now separate
   words instead of being part of them, so `john smith` with a non-breaking space finds John Smith and a stray NUL
-  no longer makes PostgreSQL reject the query. Each word is cut to 100 characters
-  (`Searchables.MAX_WORD_LENGTH`).
+  no longer makes PostgreSQL reject the query. The zero-width non-joiner and joiner stay inside words, since
+  Persian, Indic scripts and emoji sequences use them. Each word is cut to 100 characters
+  (`Searchables.MAX_WORD_LENGTH`), so an `EXACT` value longer than that can no longer be found by search.
 
 ## [0.2.0] - 2026-11-14
 

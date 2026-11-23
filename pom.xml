@@ -503,6 +503,10 @@
              Reports land in target/pit-reports/index.html. -->
         <profile>
             <id>pit</id>
+            <properties>
+                <!-- PIT runs the unit tests only; skip the Testcontainers suites so this needs no Docker. -->
+                <skipITs>true</skipITs>
+            </properties>
             <build>
                 <plugins>
                     <plugin>

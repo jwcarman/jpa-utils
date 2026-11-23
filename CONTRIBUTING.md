@@ -52,8 +52,8 @@ We maintain high test coverage and test against multiple databases:
 - **Integration tests**: Run with `mvn verify` (uses Testcontainers)
 - **Supported databases**: PostgreSQL, MySQL, MariaDB, CockroachDB, Oracle, H2
 - **Mutation tests**: Run with `./mvnw -Ppit verify`; any surviving mutant fails the build. The report is at
-  `target/pit-reports/index.html`. PIT runs against the unit tests only, since the Testcontainers suites would start
-  databases for every mutant.
+  `target/pit-reports/index.html`. The profile runs the unit tests only and skips the Testcontainers suites
+  (which would start databases for every mutant), so it needs no Docker.
 
 Mutation testing is incremental: PIT keeps each mutant's result in `.mutation-history/` (git-ignored) and re-tests
 only what changed. Delete that folder for a full run.
