@@ -24,3 +24,7 @@ buildNumber.properties
 # MkDocs build output and local browser screenshots
 /site/
 .playwright-mcp/
+
+# Editor swap files
+*.swp
+.*.sw?
