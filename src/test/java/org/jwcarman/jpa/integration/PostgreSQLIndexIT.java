@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -39,6 +40,9 @@ import static org.assertj.core.api.Assertions.assertThat;
         // One connection: the searches and the statistics reads run on the same backend.
         "spring.datasource.hikari.maximum-pool-size=1"
 })
+// Close the context while the container still runs; left cached, it would close at JVM exit against a stopped
+// container and stall the fork's shutdown.
+@DirtiesContext
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class PostgreSQLIndexIT {
