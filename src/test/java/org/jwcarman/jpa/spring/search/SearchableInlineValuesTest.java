@@ -18,7 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * them. Not recommended for browser input: safety then rests on Hibernate quoting each literal the way the database
  * reads it. These tests pin that it does on H2, and that escaping still finds literal characters.
  */
-@DataJpaTest(showSql = false, properties = "spring.jpa.properties.hibernate.criteria.value_handling_mode=INLINE")
+@DataJpaTest(showSql = false, properties = {
+        "spring.jpa.properties.hibernate.criteria.value_handling_mode=INLINE",
+        "spring.jpa.properties.hibernate.session_factory.statement_inspector=org.jwcarman.jpa.spring.search.CapturingStatementInspector"
+})
 @ContextConfiguration(classes = {SpringBootConfig.class})
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class SearchableInlineValuesTest {
@@ -38,6 +41,17 @@ class SearchableInlineValuesTest {
     void matches_nothing_and_changes_nothing(String term) {
         assertThat(locations.search(term, Pageable.unpaged())).isEmpty();
         assertThat(locations.count()).isEqualTo(2);
+    }
+
+    @Test
+    void really_writes_the_words_into_the_sql() {
+        CapturingStatementInspector.clear();
+
+        locations.search("zqx", Pageable.unpaged());
+
+        // Otherwise a mistyped or renamed property would leave every test here passing under the default BIND.
+        assertThat(CapturingStatementInspector.statements())
+                .anyMatch(sql -> sql.startsWith("select") && sql.contains("'%zqx%'"));
     }
 
     @Test

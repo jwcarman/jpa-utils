@@ -359,7 +359,7 @@ public abstract class DatabaseIT {
 
         @ParameterizedTest
         @ValueSource(strings = {"' OR '1'='1", "\\'||1--", "\\' OR 1=1 --", "'/**/OR/**/1=1--", "%' OR '1'='1",
-                "oh\u0000' --", "\\%", "\\_", "abc\\"})
+                "oh\u0000' --", "\\%", "\\_", "abc\\", "\uD800", "a\uDC00b"})
         void matches_nothing_and_changes_nothing(String term) {
             assertThat(lastNamesFor(term)).isEmpty();
             assertThat(personRepository.count()).isEqualTo(12);
