@@ -190,6 +190,16 @@ class SearchablesTest {
         }
 
         @ParameterizedTest
+        @ValueSource(strings = {
+                "می‌خواهم",  // Persian "I want": a zero-width non-joiner is part of the word
+                "क्‍ष",                          // Devanagari with a zero-width joiner
+                "👩‍💻"                     // an emoji sequence joined by a zero-width joiner
+        })
+        void keep_zero_width_joiners_inside_a_word(String word) {
+            assertThat(Searchables.wordsOf(word)).containsExactly(word);
+        }
+
+        @ParameterizedTest
         @ValueSource(strings = {"\u0000", "​", "﻿", " ", "​ ﻿\u0000"})
         void are_none_for_a_term_of_only_separators(String term) {
             assertThat(Searchables.wordsOf(term)).isEmpty();

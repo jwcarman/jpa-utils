@@ -9,10 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.WeakHashMap;
 import java.util.regex.Pattern;
 
 /**
@@ -33,7 +35,8 @@ import java.util.regex.Pattern;
  *   <li><strong>Annotation-Driven:</strong> Automatically discovers {@code @Searchable} fields</li>
  *   <li><strong>Case-Insensitive:</strong> All searches use lowercase comparison</li>
  *   <li><strong>Wildcard Escaping:</strong> Automatically escapes {@code %}, {@code _}, and {@code \}</li>
- *   <li><strong>Word by Word:</strong> The term is split on whitespace; a row matches when every word appears in at
+ *   <li><strong>Word by Word:</strong> The term is split on whitespace, Unicode spaces, control and invisible format
+ *       characters, and each word is cut to {@value #MAX_WORD_LENGTH} characters; a row matches when every word appears in at
  *       least one searchable field, in any order (at most {@value #MAX_SEARCH_WORDS} words are used)</li>
  *   <li><strong>Null-Safe:</strong> Returns all results when search term is null or blank</li>
  *   <li><strong>Type-Safe:</strong> Only processes String fields</li>
@@ -195,9 +198,11 @@ public final class Searchables {
 
     /**
      * Cache of searchable attributes per entity type to avoid repeated reflection operations.
-     * Key: the metamodel's entity type, Value: the searchable String attributes with their match modes
+     * Key: the metamodel's entity type, Value: the searchable String attributes with their match modes.
+     * Weakly keyed, so a closed {@code EntityManagerFactory}'s metamodel isn't kept alive by the cache.
      */
-    private static final ConcurrentHashMap<EntityType<?>, List<SearchableAttribute>> SEARCHABLE_ATTRIBUTES_CACHE = new ConcurrentHashMap<>();
+    private static final Map<EntityType<?>, List<SearchableAttribute>> SEARCHABLE_ATTRIBUTES_CACHE =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     /**
      * The most words of a search term that are matched; any beyond are ignored, bounding the size of the query.
@@ -213,9 +218,11 @@ public final class Searchables {
     /**
      * What separates words: any whitespace, Unicode space or line separator ({@code \p{Z}}, e.g. a non-breaking
      * space), control character ({@code \p{Cc}}, e.g. tab or NUL) or invisible format character ({@code \p{Cf}},
-     * e.g. a zero-width space or byte-order mark). None of them ever reaches the database.
+     * e.g. a zero-width space or byte-order mark). None of them ever reaches the database. The zero-width
+     * non-joiner and joiner (U+200C, U+200D) are the exception: they are part of words in Persian, Indic scripts and
+     * emoji sequences, so they stay inside words.
      */
-    private static final Pattern SEPARATORS = Pattern.compile("[\\p{Z}\\p{Cc}\\p{Cf}]+");
+    private static final Pattern SEPARATORS = Pattern.compile("[\\p{Z}\\p{Cc}\\p{Cf}&&[^\\u200C\\u200D]]+");
 
 // --------------------------- CONSTRUCTORS ---------------------------
 
@@ -227,7 +234,8 @@ public final class Searchables {
     /**
      * Creates a JPA Criteria API predicate that searches all {@code @Searchable} String fields.
      *
-     * <p>The search term is split on whitespace into words (lowercased, duplicates dropped, at most
+     * <p>The search term is split into words on whitespace, Unicode spaces, control and invisible format characters
+     * (lowercased, cut to {@value #MAX_WORD_LENGTH} characters, duplicates dropped, at most
      * {@value #MAX_SEARCH_WORDS}). A row matches when <em>every</em> word appears, case-insensitively, in at least one
      * searchable field, so {@code "john smith"} finds a row with {@code firstName = "John"} and
      * {@code lastName = "Smith"}, in either order. SQL wildcards in the words are escaped.</p>
