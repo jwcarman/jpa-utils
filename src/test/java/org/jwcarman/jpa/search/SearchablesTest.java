@@ -1,10 +1,16 @@
 package org.jwcarman.jpa.search;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.SingularAttribute;
+import org.jwcarman.jpa.search.Searchables.SearchableAttribute;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
@@ -12,9 +18,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Member;
-import java.util.Set;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,14 +35,108 @@ import static org.mockito.Mockito.when;
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class SearchablesTest {
 
-    @Test
-    void skips_a_string_attribute_with_no_java_member() {
-        assertNoSearchableAttributes(NoMemberEntity.class, null);
+    @Nested
+    class Search_predicate {
+
+        @ParameterizedTest
+        @NullAndEmptySource
+        @ValueSource(strings = {" ", "\t \n"})
+        void is_the_conjunction_for_a_null_or_blank_term(String term) {
+            CriteriaBuilder builder = mock(CriteriaBuilder.class);
+            Predicate conjunction = mock(Predicate.class);
+            when(builder.conjunction()).thenReturn(conjunction);
+
+            assertThat(Searchables.createSearchPredicate(term, mock(Root.class), builder)).isSameAs(conjunction);
+            verify(builder, never()).or(any(Predicate[].class));
+        }
+
+        @Test
+        void is_the_conjunction_when_a_string_attribute_has_no_java_member() {
+            assertNoSearchableAttributes(null);
+        }
+
+        @Test
+        void is_the_conjunction_when_a_string_attribute_s_member_is_neither_a_field_nor_a_method() {
+            assertNoSearchableAttributes(mock(Member.class));
+        }
+
+        private static void assertNoSearchableAttributes(Member javaMember) {
+            EntityType<?> entityType = entityType(attribute("name", String.class, javaMember));
+            Root<?> root = mock(Root.class);
+            doReturn(entityType).when(root).getModel();
+
+            CriteriaBuilder builder = mock(CriteriaBuilder.class);
+            Predicate conjunction = mock(Predicate.class);
+            when(builder.conjunction()).thenReturn(conjunction);
+
+            assertThat(Searchables.createSearchPredicate("term", root, builder)).isSameAs(conjunction);
+            verify(builder, never()).or(any(Predicate[].class));
+        }
     }
 
-    @Test
-    void skips_a_string_attribute_whose_member_is_neither_a_field_nor_a_method() {
-        assertNoSearchableAttributes(OtherMemberEntity.class, mock(Member.class));
+    @Nested
+    class Searchable_attributes {
+
+        private final Logger logger = (Logger) LoggerFactory.getLogger(Searchables.class);
+        private final ListAppender<ILoggingEvent> logged = new ListAppender<>();
+
+        @BeforeEach
+        void captureLogging() {
+            logged.start();
+            logger.addAppender(logged);
+        }
+
+        @AfterEach
+        void releaseLogging() {
+            logger.detachAppender(logged);
+        }
+
+        @Test
+        void include_an_annotated_string_field_with_its_match_mode() throws NoSuchFieldException {
+            EntityType<?> type = entityType(attribute("city", String.class, Sample.class.getDeclaredField("city")));
+
+            assertThat(Searchables.searchableAttributesOf(type))
+                    .containsExactly(new SearchableAttribute("city", MatchMode.PREFIX));
+        }
+
+        @Test
+        void include_an_annotated_string_getter_with_its_match_mode() throws NoSuchMethodException {
+            EntityType<?> type = entityType(attribute("title", String.class, Sample.class.getDeclaredMethod("getTitle")));
+
+            assertThat(Searchables.searchableAttributesOf(type))
+                    .containsExactly(new SearchableAttribute("title", MatchMode.EXACT));
+        }
+
+        @Test
+        void exclude_an_annotated_attribute_that_is_not_a_string() throws NoSuchFieldException {
+            EntityType<?> type = entityType(attribute("count", Integer.class, Sample.class.getDeclaredField("count")));
+
+            assertThat(Searchables.searchableAttributesOf(type)).isEmpty();
+        }
+
+        @Test
+        void exclude_an_unannotated_string_attribute() throws NoSuchFieldException {
+            EntityType<?> type = entityType(attribute("plain", String.class, Sample.class.getDeclaredField("plain")));
+
+            assertThat(Searchables.searchableAttributesOf(type)).isEmpty();
+        }
+
+        @Test
+        void are_reported_with_a_warning_when_there_are_none() throws NoSuchFieldException {
+            Searchables.searchableAttributesOf(
+                    entityType(attribute("plain", String.class, Sample.class.getDeclaredField("plain"))));
+
+            assertThat(logged.list).extracting(ILoggingEvent::getFormattedMessage)
+                    .containsExactly("No searchable attributes found for Sample");
+        }
+
+        @Test
+        void are_not_reported_when_there_are_some() throws NoSuchFieldException {
+            Searchables.searchableAttributesOf(
+                    entityType(attribute("city", String.class, Sample.class.getDeclaredField("city"))));
+
+            assertThat(logged.list).isEmpty();
+        }
     }
 
     @Nested
@@ -76,31 +178,39 @@ class SearchablesTest {
         }
     }
 
-    // Each test uses its own entity class: Searchables caches attribute names per class.
-    private static void assertNoSearchableAttributes(Class<?> entityClass, Member javaMember) {
+    private static SingularAttribute<?, ?> attribute(String name, Class<?> javaType, Member javaMember) {
         SingularAttribute<?, ?> attribute = mock(SingularAttribute.class);
-        doReturn(String.class).when(attribute).getJavaType();
+        doReturn(name).when(attribute).getName();
+        doReturn(javaType).when(attribute).getJavaType();
         doReturn(javaMember).when(attribute).getJavaMember();
+        return attribute;
+    }
 
+    private static EntityType<?> entityType(SingularAttribute<?, ?>... attributes) {
         EntityType<?> entityType = mock(EntityType.class);
-        doReturn(Set.of(attribute)).when(entityType).getSingularAttributes();
-        doReturn(entityClass.getSimpleName()).when(entityType).getName();
-
-        Root<?> root = mock(Root.class);
-        doReturn(entityClass).when(root).getJavaType();
-        doReturn(entityType).when(root).getModel();
-
-        CriteriaBuilder builder = mock(CriteriaBuilder.class);
-        Predicate conjunction = mock(Predicate.class);
-        when(builder.conjunction()).thenReturn(conjunction);
-
-        assertThat(Searchables.createSearchPredicate("term", root, builder)).isSameAs(conjunction);
-        verify(builder, never()).or(any(Predicate[].class));
+        doReturn(new LinkedHashSet<>(List.of(attributes))).when(entityType).getSingularAttributes();
+        doReturn("Sample").when(entityType).getName();
+        return entityType;
     }
 
-    static class NoMemberEntity {
-    }
+    /**
+     * Supplies real annotated members; never instantiated.
+     */
+    static class Sample {
 
-    static class OtherMemberEntity {
+        @Searchable(match = MatchMode.PREFIX)
+        String city;
+
+        @Searchable
+        Integer count;
+
+        String plain;
+
+        String title;
+
+        @Searchable(match = MatchMode.EXACT)
+        String getTitle() {
+            return title;
+        }
     }
 }

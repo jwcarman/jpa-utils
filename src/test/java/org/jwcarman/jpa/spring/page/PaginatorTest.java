@@ -328,10 +328,41 @@ class PaginatorTest {
         }
 
         @Test
+        void accepts_a_default_and_a_maximum_of_one() {
+            Paginator paginator = Paginator.of(Person.class, PersonSort.class, cfg -> cfg.defaultPageSize(1).maxPageSize(1));
+
+            assertThat(paginator.pageableOf(spec(0, null, null, null)).getPageSize()).isEqualTo(1);
+            assertThat(paginator.pageableOf(spec(0, 5, null, null)).getPageSize()).isEqualTo(1);
+        }
+
+        @Test
+        void accepts_a_default_equal_to_the_maximum() {
+            Paginator paginator = Paginator.of(Person.class, PersonSort.class, cfg -> cfg.defaultPageSize(50).maxPageSize(50));
+
+            assertThat(paginator.pageableOf(spec(0, null, null, null)).getPageSize()).isEqualTo(50);
+        }
+
+        @Test
         void rejects_a_maximum_below_one() {
             assertThatThrownBy(() -> Paginator.of(Person.class, PersonSort.class, cfg -> cfg.maxPageSize(0)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("maxPageSize");
+        }
+    }
+
+    @Nested
+    class Configuration {
+
+        @Test
+        void returns_itself_from_every_setting_for_chaining() {
+            Paginator.of(Person.class, PersonSort.class, cfg -> assertThat(List.of(
+                    cfg.tiebreaker("id"),
+                    cfg.noTiebreaker(),
+                    cfg.skipPropertyValidation(),
+                    cfg.defaultSort(PersonSort.LAST_NAME),
+                    cfg.defaultPageSize(DEFAULT_PAGE_SIZE),
+                    cfg.maxPageSize(DEFAULT_MAX_PAGE_SIZE)))
+                    .allSatisfy(returned -> assertThat(returned).isSameAs(cfg)));
         }
     }
 

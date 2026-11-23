@@ -3,6 +3,7 @@ package org.jwcarman.jpa.spring.audit;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Test;
+import org.jwcarman.jpa.entity.BaseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
@@ -40,6 +41,19 @@ class AuditableEntityTest {
 
         assertThat(document).isEqualTo(document);
         assertThat(document.hashCode()).isEqualTo(hashBefore);
+    }
+
+    @Test
+    void hashes_exactly_like_a_base_entity_with_the_same_id() {
+        UUID id = UUID.randomUUID();
+
+        assertThat(new Document(id)).hasSameHashCodeAs(new PlainEntity(id));
+    }
+
+    static class PlainEntity extends BaseEntity {
+        PlainEntity(UUID id) {
+            super(id);
+        }
     }
 
     static class Document extends AuditableEntity {

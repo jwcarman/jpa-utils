@@ -193,9 +193,9 @@ public final class Searchables {
 
     /**
      * Cache of searchable attributes per entity type to avoid repeated reflection operations.
-     * Key: Entity Class, Value: the searchable String attributes with their match modes
+     * Key: the metamodel's entity type, Value: the searchable String attributes with their match modes
      */
-    private static final ConcurrentHashMap<Class<?>, List<SearchableAttribute>> SEARCHABLE_ATTRIBUTES_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<EntityType<?>, List<SearchableAttribute>> SEARCHABLE_ATTRIBUTES_CACHE = new ConcurrentHashMap<>();
 
     /**
      * The most words of a search term that are matched; any beyond are ignored, bounding the size of the query.
@@ -249,7 +249,7 @@ public final class Searchables {
             return builder.conjunction(); // No filtering if searchTerm is empty/null
         }
 
-        final var attributes = getSearchableAttributes(root.getJavaType(), root.getModel());
+        final var attributes = SEARCHABLE_ATTRIBUTES_CACHE.computeIfAbsent(root.getModel(), Searchables::searchableAttributesOf);
         if (attributes.isEmpty()) {
             return builder.conjunction();
         }
@@ -280,26 +280,23 @@ public final class Searchables {
     }
 
     /**
-     * Gets the searchable attributes of the given entity type, using a cache to avoid repeated reflection.
+     * Finds the searchable attributes of an entity type: its String attributes whose field or getter carries
+     * {@link Searchable}, each with its match mode. Uncached; {@link #createSearchPredicate} caches the result per
+     * entity type.
      *
-     * @param entityClass the entity class to use as cache key
      * @param entityType the entity type to inspect
      * @return the searchable String attributes with their match modes (may be empty but never null)
      */
-    private static List<SearchableAttribute> getSearchableAttributes(Class<?> entityClass, EntityType<?> entityType) {
-        return SEARCHABLE_ATTRIBUTES_CACHE.computeIfAbsent(entityClass, clazz ->
-                {
-                    List<SearchableAttribute> searchableAttributes = entityType.getSingularAttributes().stream()
-                            .filter(attribute -> String.class.equals(attribute.getJavaType()))
-                            .flatMap(attribute -> searchableOf(attribute).stream()
-                                    .map(searchable -> new SearchableAttribute(attribute.getName(), searchable.match())))
-                            .toList();
-                    if (searchableAttributes.isEmpty()) {
-                        log.warn("No searchable attributes found for {}", entityType.getName());
-                    }
-                    return searchableAttributes;
-                }
-        );
+    static List<SearchableAttribute> searchableAttributesOf(EntityType<?> entityType) {
+        final List<SearchableAttribute> searchableAttributes = entityType.getSingularAttributes().stream()
+                .filter(attribute -> String.class.equals(attribute.getJavaType()))
+                .flatMap(attribute -> searchableOf(attribute).stream()
+                        .map(searchable -> new SearchableAttribute(attribute.getName(), searchable.match())))
+                .toList();
+        if (searchableAttributes.isEmpty()) {
+            log.warn("No searchable attributes found for {}", entityType.getName());
+        }
+        return searchableAttributes;
     }
 
     private static Predicate matches(Root<?> root, CriteriaBuilder builder, SearchableAttribute attribute, String word) {
@@ -322,7 +319,7 @@ public final class Searchables {
     /**
      * A searchable attribute of an entity type: its name and how it matches.
      */
-    private record SearchableAttribute(String name, MatchMode match) {
+    record SearchableAttribute(String name, MatchMode match) {
     }
 
     private static String sanitizeSearchTerm(String searchTerm) {

@@ -21,7 +21,10 @@ class PagingWebAutoConfigurationTest {
 
     @Test
     void registers_the_converter_in_a_servlet_web_application() {
-        webRunner.run(context -> assertThat(context).hasSingleBean(SortDirectionConverter.class));
+        webRunner.run(context -> assertThat(context)
+                .hasSingleBean(SortDirectionConverter.class)
+                .getBean(SortDirectionConverter.class)
+                .isInstanceOf(SortDirectionConverter.class));
     }
 
     @Test
