@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Match modes for `@Searchable`.** `@Searchable(match = MatchMode.PREFIX)` matches the start of a field and
-  `MatchMode.EXACT` matches the whole value (case-insensitive), so databases can use an index on `LOWER(column)`.
+  `MatchMode.EXACT` matches the whole value (case-insensitive), so a search can use an index on `LOWER(column)`:
+  both modes on PostgreSQL, `EXACT` only on MySQL, neither on MariaDB.
   `CONTAINS` stays the default, so existing entities are unchanged. Indexes help only when every searchable field
   of an entity is `PREFIX` or `EXACT`; see [Search](https://jwcarman.github.io/jpa-utils/guides/search/).
 

@@ -25,15 +25,17 @@ public enum MatchMode {
     /**
      * The field starts with the word: {@code LOWER(col) LIKE 'word%' ESCAPE '\'}.
      *
-     * <p>Can use an index on {@code LOWER(col)}. On PostgreSQL that index must be built with
-     * {@code text_pattern_ops} (or the C collation), or a prefix {@code LIKE} cannot use it.</p>
+     * <p>Can use an index on {@code LOWER(col)} on PostgreSQL, where that index must be built with
+     * {@code text_pattern_ops} (or the C collation). MySQL does not use functional indexes for {@code LIKE}, and
+     * MariaDB has no expression indexes, so on those databases this still scans the table.</p>
      */
     PREFIX,
 
     /**
      * The field equals the word: {@code LOWER(col) = 'word'}.
      *
-     * <p>Can use a plain index on {@code LOWER(col)}; suited to codes such as a state ({@code OH}). Because the term is
+     * <p>Can use a plain index on {@code LOWER(col)} (a functional index on MySQL; MariaDB has no expression indexes,
+     * so there it scans); suited to codes such as a state ({@code OH}). Because the term is
      * split into words, a field whose value contains whitespace ({@code New York}) never matches.</p>
      */
     EXACT

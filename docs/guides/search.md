@@ -49,8 +49,8 @@ public class Customer extends BaseEntity {
 
 All three are case-insensitive, so `oh` finds `OH`. A bare `@Searchable` is `CONTAINS`.
 
-The reason to choose `PREFIX` or `EXACT` is speed: unlike `CONTAINS`, they can use an index (see
-[Limits](#limits)). `EXACT` suits codes such as a state or a status. Because the term is split into words, `EXACT`
+The reason to choose `PREFIX` or `EXACT` is speed: unlike `CONTAINS`, they can use an index on databases that
+support it (see [Limits](#limits)). `EXACT` suits codes such as a state or a status. Because the term is split into words, `EXACT`
 can't match a value that contains a space: searching `new york` never matches a field holding "New York". Use
 `PREFIX` or `CONTAINS` for fields like that.
 
@@ -133,8 +133,15 @@ CREATE INDEX customer_state_lower ON customer (LOWER(state));
 CREATE INDEX customer_last_name_lower ON customer (LOWER(last_name) text_pattern_ops);
 ```
 
-On MySQL 8 an expression index needs doubled parentheses, `((LOWER(last_name)))`. MariaDB has no expression indexes;
-index a virtual generated column holding `LOWER(last_name)` instead.
+Support differs by database. These results come from `EXPLAIN` on a 20,000-row table:
+
+| Database | `EXACT` | `PREFIX` |
+|----------|---------|----------|
+| PostgreSQL | index on `LOWER(col)` | index on `LOWER(col) text_pattern_ops` (verified by the test suite) |
+| MySQL 8+ | functional index `((LOWER(col)))` | **scans**: MySQL uses functional indexes only for `=`, `<`, `>`, `BETWEEN` and `IN`, not `LIKE` |
+| MariaDB 11.6 | **scans** | **scans**: MariaDB has no expression indexes, and it doesn't match `LOWER(col)` to an indexed virtual column |
+
+Oracle and CockroachDB support expression indexes on `LOWER(col)`; check your plans with `EXPLAIN`.
 
 **Indexes help only when every `@Searchable` field on the entity is `PREFIX` or `EXACT`, and indexed.** For each
 word the fields are ORed together, and a database can use indexes for an `OR` only when it can use one for every
