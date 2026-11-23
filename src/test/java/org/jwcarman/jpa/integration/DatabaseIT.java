@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -321,6 +322,57 @@ public abstract class DatabaseIT {
         @Test
         void excludes_a_row_missing_any_word() {
             assertThat(lastNamesFor("charlie oh")).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
+    class Literal_characters {
+
+        @BeforeEach
+        void addRowsWithSqlCharacters() {
+            personRepository.save(new TestPerson("Back", "Slash", "back\\slash@example.com", "b\\x", "a\\b"));
+            personRepository.save(new TestPerson("Pat", "Ohare", "o'hare@example.com", "o'x", "q'r"));
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"\\", "k\\s", "back\\slash", "b\\", "a\\b"})
+        void finds_a_backslash_literally_in_every_mode(String term) {
+            assertThat(lastNamesFor(term)).containsExactly("Slash");
+        }
+
+        @Test
+        void does_not_treat_a_doubled_backslash_as_one() {
+            assertThat(lastNamesFor("\\\\")).isEmpty();
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {"o'h", "q'r"})
+        void finds_a_quote_literally(String term) {
+            assertThat(lastNamesFor(term)).containsExactly("Ohare");
+        }
+    }
+
+    @Nested
+    @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
+    class Untrusted_input {
+
+        @ParameterizedTest
+        @ValueSource(strings = {"' OR '1'='1", "\\'||1--", "\\' OR 1=1 --", "'/**/OR/**/1=1--", "%' OR '1'='1",
+                "oh\u0000' --", "\\%", "\\_", "abc\\"})
+        void matches_nothing_and_changes_nothing(String term) {
+            assertThat(lastNamesFor(term)).isEmpty();
+            assertThat(personRepository.count()).isEqualTo(12);
+        }
+
+        @Test
+        void treats_a_nul_character_as_a_separator() {
+            assertThat(lastNamesFor("alice\u0000anderson")).containsExactly("Anderson");
+        }
+
+        @Test
+        void matches_nothing_for_a_very_long_word() {
+            assertThat(lastNamesFor("a".repeat(100_000))).isEmpty();
         }
     }
 

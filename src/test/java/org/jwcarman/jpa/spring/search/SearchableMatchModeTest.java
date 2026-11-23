@@ -1,6 +1,7 @@
 package org.jwcarman.jpa.spring.search;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.jwcarman.jpa.search.Searchables;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
 import org.junit.jupiter.api.Nested;
@@ -14,6 +15,8 @@ import org.springframework.test.context.ContextConfiguration;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -143,7 +146,9 @@ class SearchableMatchModeTest {
     class Untrusted_input {
 
         @ParameterizedTest
-        @ValueSource(strings = {"' OR '1'='1", "'; DROP TABLE location; --", "oh' --", "%", "_", "\\", "%%", "o\\h"})
+        @ValueSource(strings = {"' OR '1'='1", "'; DROP TABLE location; --", "oh' --", "%", "_", "\\", "%%", "o\\h",
+                "\\'||1--", "\\' OR 1=1 --", "'/**/OR/**/1=1--", "%' OR '1'='1", "\\%", "\\_", "abc\\",
+                "oh\u0000' --", "\uD800", "\uFEFF%"})
         void matches_nothing_and_changes_nothing(String term) {
             assertThat(namesFor(term)).isEmpty();
             assertThat(locations.count()).isEqualTo(4);
@@ -159,6 +164,47 @@ class SearchableMatchModeTest {
             assertThat(CapturingStatementInspector.statements())
                     .isNotEmpty()
                     .noneMatch(sql -> sql.toLowerCase(Locale.ROOT).contains(term));
+        }
+
+        /**
+         * The search's select statements; inserts left pending by {@code setUp} are flushed alongside them.
+         */
+        private List<String> selects() {
+            return CapturingStatementInspector.statements().stream()
+                    .filter(sql -> sql.startsWith("select"))
+                    .toList();
+        }
+
+        @Test
+        void produces_the_same_sql_text_whatever_the_words() {
+            CapturingStatementInspector.clear();
+            namesFor("colum");
+            final List<String> first = selects();
+
+            CapturingStatementInspector.clear();
+            namesFor("zq'x");
+
+            assertThat(selects()).hasSize(1).isEqualTo(first);
+        }
+
+        @Test
+        void matches_nothing_for_a_very_long_word() {
+            assertThat(namesFor("o".repeat(100_000))).isEmpty();
+        }
+
+        @Test
+        void binds_at_most_ten_words_of_at_most_a_hundred_characters() {
+            final String manyLongWords = IntStream.range(0, 1_000)
+                    .mapToObj(i -> i + "x".repeat(500))
+                    .collect(Collectors.joining(" "));
+            CapturingStatementInspector.clear();
+
+            namesFor(manyLongWords);
+
+            // Three searchable fields (name, city, state), so three bound values per word.
+            assertThat(selects()).singleElement()
+                    .satisfies(sql -> assertThat(sql.chars().filter(c -> c == '?').count())
+                            .isEqualTo(3L * Searchables.MAX_SEARCH_WORDS));
         }
     }
 }
