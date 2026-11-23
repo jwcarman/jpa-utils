@@ -51,6 +51,10 @@
         <sonatype.plugin.version>0.12.0</sonatype.plugin.version>
         <source.plugin.version>3.4.0</source.plugin.version>
         <surefire.plugin.version>3.6.1</surefire.plugin.version>
+        <pitest.plugin.version>1.30.2</pitest.plugin.version>
+        <pitest-junit5.plugin.version>1.2.3</pitest-junit5.plugin.version>
+        <!-- PIT's file history (incremental analysis) lives in this plugin, not in pitest itself. -->
+        <pitest-history.plugin.version>0.0.1</pitest-history.plugin.version>
 
         <!-- SonarCloud Configuration -->
         <sonar.organization>jwcarman</sonar.organization>
@@ -491,6 +495,76 @@
                                 <arg>loopback</arg>
                             </gpgArguments>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!-- Mutation testing, opt-in: ./mvnw -Ppit verify
+             Reports land in target/pit-reports/index.html. -->
+        <profile>
+            <id>pit</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>${pitest.plugin.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-junit5-plugin</artifactId>
+                                <version>${pitest-junit5.plugin.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-history-plugin</artifactId>
+                                <version>${pitest-history.plugin.version}</version>
+                                <!-- pitest itself comes from pitest-maven, at the version pinned above -->
+                                <exclusions>
+                                    <exclusion>
+                                        <groupId>*</groupId>
+                                        <artifactId>*</artifactId>
+                                    </exclusion>
+                                </exclusions>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <targetClasses>
+                                <param>org.jwcarman.jpa.*</param>
+                            </targetClasses>
+                            <targetTests>
+                                <param>org.jwcarman.jpa.*</param>
+                            </targetTests>
+                            <!-- The Testcontainers suites would start databases for every mutant; the H2 tests cover the same code. -->
+                            <excludedTestClasses>
+                                <param>org.jwcarman.jpa.integration.*</param>
+                            </excludedTestClasses>
+                            <jvmArgs>
+                                <value>-javaagent:${org.mockito:mockito-core:jar}</value>
+                                <value>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</value>
+                                <value>-Xshare:off</value>
+                            </jvmArgs>
+                            <threads>2</threads>
+                            <mutationThreshold>100</mutationThreshold>
+                            <failWhenNoMutations>false</failWhenNoMutations>
+                            <timestampedReports>false</timestampedReports>
+                            <!-- Incremental: a mutant whose class and covering tests are unchanged keeps its last result. -->
+                            <historyInputFile>${maven.multiModuleProjectDirectory}/.mutation-history/pit/${project.artifactId}.bin</historyInputFile>
+                            <historyOutputFile>${maven.multiModuleProjectDirectory}/.mutation-history/pit/${project.artifactId}.bin</historyOutputFile>
+                            <outputFormats>
+                                <param>HTML</param>
+                                <param>XML</param>
+                            </outputFormats>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>pit</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>mutationCoverage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>

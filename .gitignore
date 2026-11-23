@@ -28,3 +28,6 @@ buildNumber.properties
 # Editor swap files
 *.swp
 .*.sw?
+
+# PIT incremental history
+.mutation-history/
