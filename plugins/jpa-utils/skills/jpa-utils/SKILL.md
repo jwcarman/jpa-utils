@@ -7,7 +7,8 @@ description: Use when a Spring Boot / JPA app depends on jpa-utils (org.jwcarman
 
 jpa-utils gives a Spring Data JPA app its entity base classes (UUID v7 ids, optimistic locking,
 auditing), paged and sorted list endpoints with a fixed JSON shape, and free-text search over
-marked fields. This skill covers `0.3.0` (see `jpa-utils.version` or the dependency in `pom.xml`).
+marked fields. This skill covers `0.3.0`; a line marked *since 0.3.0* does not apply to an app on
+`0.2.x` (see `jpa-utils.version` or the dependency in `pom.xml`).
 Everything here is in the jar: don't unpack it to learn the API, this page and its two references
 say what each type does.
 
@@ -49,7 +50,8 @@ say what each type does.
     `@Searchable` field (`tower dark` finds "The Dark Tower" and "Tower of Darkness");
   - ignores case; escapes `%`, `_` and `\`, so they match themselves;
   - a `null` or blank term matches every row, so pass the request's `search` straight through;
-  - `@Searchable(match = MatchMode.PREFIX)` or `EXACT` instead of the default `CONTAINS`.
+  - *since 0.3.0:* `@Searchable(match = MatchMode.PREFIX)` or `EXACT` instead of the default
+    `CONTAINS` (on 0.2.x, every `@Searchable` field is `CONTAINS`).
   To add other conditions: `repository.findAll(repository.searchFor(term).and(spec), pageable)`.
 - Every sort property is checked against the entity when the `Paginator` is built: a misspelled
   `getSortProperty()` fails when the service class loads (at startup, as
