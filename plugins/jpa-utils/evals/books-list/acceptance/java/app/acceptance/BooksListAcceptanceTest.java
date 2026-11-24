@@ -175,6 +175,17 @@ class BooksListAcceptanceTest {
   }
 
   @Test
+  void every_word_of_a_search_must_appear_in_the_title_or_author() throws Exception {
+    add("The Dark Tower", "Stephen King", "2004-09-21");
+    add("Tower of Darkness", "Jane Smith", "1999-03-01");
+    add("The Dark Half", "Stephen King", "1989-10-20");
+    add("Tower Bridge", "Ann Lee", "2001-01-01");
+    assertThat(titles(search("tower dark"))).containsExactlyInAnyOrder("The Dark Tower", "Tower of Darkness");
+    assertThat(titles(search("king tower"))).containsExactly("The Dark Tower");
+    assertThat(titles(search("KING half"))).containsExactly("The Dark Half");
+  }
+
+  @Test
   void percent_and_underscore_in_a_search_match_themselves() throws Exception {
     add("100% Kitchen", "Cook", "2010-01-01");
     add("1000 Recipes", "Cook", "2011-01-01");

@@ -28,3 +28,18 @@ arm and no decision rule: this finds causes, it does not compare.
 Then every failure is classified from its build log, test output and diff (not the agent's
 summary): cause, count, an example run, and where its fix belongs (a recipe example, a rule, a check
 script, or jpa-utils itself).
+
+### Amendment after batch 1 (written before the remaining runs)
+
+Batch 1 of `books-list` (5 runs, $0.19) passed 5 of 5, and showed the case was wrong, not the
+agents: the prompt said `search` finds books whose title or author "contains it" (the whole phrase),
+while jpa-utils' search matches every word of the term separately. All five agents read jpa-utils'
+sources, saw the difference, and wrote their own search to keep to the prompt (one said so in a
+comment). The case measured the prompt's wording, not the library.
+
+The prompt now describes jpa-utils' search (every word, anywhere in the title or author), with a
+10th hidden test for it; batch 1 fails that test. Batch 1 is reported here and not counted. The
+baseline is 10 new `books-list` runs and 10 `books-audit` runs, otherwise as above (about $1).
+
+Lesson for library-skill: a case's prompt must ask for what the library does. A contract that
+differs from it, even slightly, makes the right answer "don't use the library".

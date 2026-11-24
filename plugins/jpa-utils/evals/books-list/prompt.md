@@ -12,6 +12,6 @@ Other code and tests rely on this contract, so keep to it exactly:
 - A book is answered as `{"id", "title", "author", "published"}`.
 - `GET /api/books` answers `{"data": [books], "pagination": {"pageIndex", "pageSize", "totalElementCount", "totalPageCount", "hasNext", "hasPrevious"}}`.
 - Its query parameters, all optional: `pageIndex` (from 0, default 0), `pageSize` (default 20), `sortBy` (`TITLE`, `AUTHOR` or `PUBLISHED`; default `TITLE`), `sortDirection` (`ASC` or `DESC` in any case; default `ASC`) and `search`.
-- `search` finds books whose title or author contains it, ignoring case. Characters such as `%` and `_` in it match themselves.
+- `search` is split into words, and finds the books where every word appears somewhere in the title or the author, ignoring case: `tower dark` finds "The Dark Tower" and "Tower of Darkness", and `king tower` finds "The Dark Tower" by Stephen King. Characters such as `%` and `_` in it match themselves.
 - A `sortBy` that is not one of the three is a `400`.
 - Paging through books that share a sort value (say, one author's books sorted by `AUTHOR`) shows every book exactly once.

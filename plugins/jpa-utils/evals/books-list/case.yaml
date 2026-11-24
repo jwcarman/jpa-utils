@@ -3,7 +3,7 @@ name: books-list
 expected_outcome: |
   On a new Spring Boot app that depends on jpa-utils (nothing else in it): a Book (title, author,
   published date) with POST /api/books to add one and GET /api/books listing them paged, sorted and
-  searchable, exactly as the prompt's contract says. An unknown sortBy is a 400; paging through books
+  searchable (every word of the search in the title or author), exactly as the prompt's contract says. An unknown sortBy is a 400; paging through books
   that tie on the sort column repeats and skips none.
   Scored by script after the run, not by the graders here: accept.sh runs the case's hidden
   acceptance tests (acceptance/: Spring tests of the HTTP contract the prompt pins), and build.sh
