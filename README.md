@@ -105,6 +105,21 @@ GET /api/people?query=smith&pageIndex=0&pageSize=20&sortBy=FIRST_NAME&sortDirect
 That request sorts by `first_name DESC, id DESC`; without `sortBy` it sorts by last name. The
 [Getting Started](https://jwcarman.github.io/jpa-utils/guides/getting-started/) guide walks through it in full.
 
+## Using jpa-utils with coding agents
+
+jpa-utils ships an agent skill for [Claude Code](https://claude.com/claude-code). It tells an agent
+how to use `BaseEntity`, `AuditableEntity`, `Paginator`, `PageParams`, `PageDto`,
+`SortPropertyProvider` and `@Searchable`, so it stops unpacking the jar to work them out:
+
+```bash
+claude plugin marketplace add jwcarman/jpa-utils
+claude plugin install jpa-utils@jpa-utils
+```
+
+On two tasks (a paged, sorted, searchable list; auditing with stale-version checks), Claude Haiku
+with the skill reached a passing build 36% cheaper and 30% faster than without it, with 20 of 20
+runs succeeding. See [Coding Agents](https://jwcarman.github.io/jpa-utils/guides/agents/).
+
 ## Upgrading from 0.0.x
 
 0.1.0 replaces `Pageables` and `Pages` with `Paginator` and moves to Java 25 / Spring Boot 4. See

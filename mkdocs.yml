@@ -83,6 +83,7 @@ nav:
       - Search: guides/search.md
       - Web Layer: guides/web.md
       - Databases and Performance: guides/databases.md
+      - Coding Agents: guides/agents.md
       - Migrating to 0.1.0: guides/migrating-to-0.1.md
   - Reference:
       - API (Javadoc): https://jwcarman.github.io/jpa-utils/api/latest/
