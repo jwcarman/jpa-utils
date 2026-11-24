@@ -43,3 +43,32 @@ baseline is 10 new `books-list` runs and 10 `books-audit` runs, otherwise as abo
 
 Lesson for library-skill: a case's prompt must ask for what the library does. A contract that
 differs from it, even slightly, makes the right answer "don't use the library".
+
+## Result: jpa-utils without a skill
+
+| Case | Runs | Successes | Hidden tests all passed | Build passed | Mean turns | Mean time | Mean cost |
+|---|---|---|---|---|---|---|---|
+| books-list | 10 | 10 | 10 | 10 | 29.9 | 126 s | $0.039 |
+| books-audit | 10 | 9 | 9 | 10 | 34.2 | 148 s | $0.032 |
+
+**19 of 20.** Haiku, with no skill and no documentation but jpa-utils' sources jar, used the
+library as intended in every counted run: `BaseEntity`, a sort enum with `SortPropertyProvider`,
+`Paginator` with `PageParams` and `PageDto`, `@Searchable` with `SearchableRepository`, a 400 for
+`UnknownSortByValueException`, and in `books-audit` `AuditableEntity` with `@EnableJpaAuditing` and
+an `AuditorAware`. No run broke stable paging.
+
+Why the one run failed:
+
+| Cause | Count | Example | Where the fix belongs |
+|---|---|---|---|
+| The case: the prompt's timestamp example (`"2026-11-23T14:05:00Z"`) shows whole seconds; the run truncated to seconds, and the hidden test expects `modifiedDate` 50 ms later to be strictly after | 1 | audit b1 run 3 | the case (an example with fractions, or a test that waits a second), not the skill |
+
+Where the turns went (tool calls per run, from the traces): about 5 of 29–33 read jpa-utils'
+sources jar (unzip, `jar tf`, reading classes) to learn what a type does: how search splits a term,
+what `AuditableEntity` needs enabled, the `Paginator` API. Builds were 3.5–4 calls.
+
+**What this means for the skill.** On these jobs agents do not fail for want of a skill, so a skill
+cannot be measured by successes here. What it can change is cost: the ~5 calls spent reverse
+engineering the jar per run (about a sixth), and the search semantics every batch-1 run had to dig
+out. The skill's measurement should be turns, time and cost to a passing build at equal success,
+as roux's was in round 2, or harder cases than these, found first.
