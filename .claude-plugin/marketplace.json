@@ -1,0 +1,12 @@
+{
+  "name": "jpa-utils",
+  "owner": { "name": "jwcarman" },
+  "description": "jpa-utils' agent skill: entities, paging, sorting and search for Spring Data JPA.",
+  "plugins": [
+    {
+      "name": "jpa-utils",
+      "source": "./plugins/jpa-utils",
+      "description": "Agent skill for jpa-utils: entities, paging, sorting and search for Spring Data JPA."
+    }
+  ]
+}

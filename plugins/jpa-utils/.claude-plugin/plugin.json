@@ -1,0 +1,9 @@
+{
+  "name": "jpa-utils",
+  "description": "Agent skill for jpa-utils: entities, paging, sorting and search for Spring Data JPA, done right first time.",
+  "author": { "name": "jwcarman" },
+  "homepage": "https://github.com/jwcarman/jpa-utils",
+  "repository": "https://github.com/jwcarman/jpa-utils",
+  "license": "Apache-2.0",
+  "keywords": ["jpa", "hibernate", "spring-data", "paging", "search"]
+}
