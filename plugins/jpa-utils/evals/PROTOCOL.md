@@ -72,3 +72,29 @@ cannot be measured by successes here. What it can change is cost: the ~5 calls s
 engineering the jar per run (about a sixth), and the search semantics every batch-1 run had to dig
 out. The skill's measurement should be turns, time and cost to a passing build at equal success,
 as roux's was in round 2, or harder cases than these, found first.
+
+## Skill v1 against no skill: time and cost (written before it runs)
+
+**Hypothesis:** the skill (`skills/jpa-utils/`, ~1,100 tokens loaded, two references of ~1,500 and
+~2,300 tokens) makes agents reach a passing build in fewer turns, less time and at lower cost, at
+the same success, because it says what the baseline runs spent ~5 tool calls each reading jpa-utils'
+jar to learn: what search matches, what auditing needs enabled, the `Paginator` API.
+
+- **Model, cases, fixture, scoring:** as in the baseline (Haiku; `books-list` 10 hidden tests,
+  `books-audit` 5; fixture at `ff9558d`; hidden tests and `./mvnw -o verify`).
+- **Arms:** `claude plugin eval --ablation with-without`: each case 10 runs with the plugin (the
+  skill) and 10 without, in the same eval, so both arms meet the same conditions. 40 runs. Every
+  run is reported; none is rerun or dropped.
+- **Primary measure:** mean tool-call turns, time and cost per run, per arm, over both cases.
+- **Cost:** about $0.04 a run, about $1.60.
+
+**Decision rule.** Mann-Whitney U, one-sided, on cost per run (both cases pooled, 20 runs an arm):
+
+- **Supported:** the skill arm costs less, p < 0.05, and succeeds at least as often minus one run
+  (19 of 20 or more if the other arm has 20).
+- **Refuted:** the skill arm costs more, p < 0.05, or succeeds in 3 or more fewer runs.
+- **Not shown:** anything else. The baseline's cost spread (about $0.03–0.05) against a hoped-for
+  saving of 15–20% means 20 runs an arm may well not show it; a null result is weak evidence.
+
+Secondary: turns and time by the same test; calls reading the jar per run; whether the skill was
+loaded and which reference was read; successes per arm.
