@@ -32,3 +32,6 @@ buildNumber.properties
 # PIT incremental history
 .mutation-history/
 .superpowers/
+
+# The local eval fixture path (eval-fixture.sh output), read by place-app.sh
+plugins/jpa-utils/evals/fixture.local

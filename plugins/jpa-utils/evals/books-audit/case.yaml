@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: books-audit
+expected_outcome: |
+  On the books app (a Book with POST /api/books and a paged, sorted, searchable GET /api/books, built
+  with jpa-utils): record who created and who last changed each book and when, taken from the X-User
+  request header ("system" without it), and add PUT /api/books/{id}, where a stale version is a 409.
+  Scored by script after the run, not by the graders here: accept.sh runs the case's hidden
+  acceptance tests (acceptance/: Spring tests of the HTTP contract the prompt pins), and build.sh
+  runs the app's own ./mvnw -o verify.
+context:
+  scaffold_script: place-app.sh
