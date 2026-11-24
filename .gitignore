@@ -31,3 +31,4 @@ buildNumber.properties
 
 # PIT incremental history
 .mutation-history/
+.superpowers/
