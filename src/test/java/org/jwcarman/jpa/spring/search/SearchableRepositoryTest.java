@@ -1,5 +1,24 @@
+/*
+ * Copyright © 2025 James Carman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.jwcarman.jpa.spring.search;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -8,131 +27,130 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-
 @DataJpaTest(showSql = false)
 @ContextConfiguration(classes = {SpringBootConfig.class})
 class SearchableRepositoryTest {
 
-    @Autowired
-    private PersonRepository personRepository;
+  @Autowired private PersonRepository personRepository;
 
-    @Autowired
-    private AnimalRepository animalRepository;
+  @Autowired private AnimalRepository animalRepository;
 
-    @Autowired
-    private UnsearchableRepository unsearchableRepository;
+  @Autowired private UnsearchableRepository unsearchableRepository;
 
-    @Test
-    void unsearchablesShouldReturnAllResults() {
-        final var unsearchable = new Unsearchable("FOO");
+  @Test
+  void unsearchablesShouldReturnAllResults() {
+    final var unsearchable = new Unsearchable("FOO");
 
-        unsearchableRepository.save(unsearchable);
+    unsearchableRepository.save(unsearchable);
 
-        Page<Unsearchable> page = unsearchableRepository.search("abc", Pageable.unpaged());
-        assertThat(page.getTotalElements()).isEqualTo(1);
-    }
+    Page<Unsearchable> page = unsearchableRepository.search("abc", Pageable.unpaged());
+    assertThat(page.getTotalElements()).isEqualTo(1);
+  }
 
-    @Test
-    void unsearchablesShouldReturnAllResultsOnMultipleSearches() {
-        // This test verifies that the caching works correctly for entities without @Searchable fields
-        final var unsearchable1 = new Unsearchable("FOO");
-        final var unsearchable2 = new Unsearchable("BAR");
+  @Test
+  void unsearchablesShouldReturnAllResultsOnMultipleSearches() {
+    // This test verifies that the caching works correctly for entities without @Searchable fields
+    final var unsearchable1 = new Unsearchable("FOO");
+    final var unsearchable2 = new Unsearchable("BAR");
 
-        unsearchableRepository.save(unsearchable1);
-        unsearchableRepository.save(unsearchable2);
+    unsearchableRepository.save(unsearchable1);
+    unsearchableRepository.save(unsearchable2);
 
-        // First search - may populate cache and log warning
-        Page<Unsearchable> page1 = unsearchableRepository.search("abc", Pageable.unpaged());
-        assertThat(page1.getTotalElements()).isEqualTo(2);
+    // First search - may populate cache and log warning
+    Page<Unsearchable> page1 = unsearchableRepository.search("abc", Pageable.unpaged());
+    assertThat(page1.getTotalElements()).isEqualTo(2);
 
-        // Second search - should use cached result (warning logged only once during cache population)
-        Page<Unsearchable> page2 = unsearchableRepository.search("xyz", Pageable.unpaged());
-        assertThat(page2.getTotalElements()).isEqualTo(2);
-    }
+    // Second search - should use cached result (warning logged only once during cache population)
+    Page<Unsearchable> page2 = unsearchableRepository.search("xyz", Pageable.unpaged());
+    assertThat(page2.getTotalElements()).isEqualTo(2);
+  }
 
-    @Test
-    void search_for_combines_with_other_specifications() {
-        personRepository.save(new Person("Joe", "Shmoe"));
-        personRepository.save(new Person("Joe", "Black"));
-        personRepository.save(new Person("Ann", "Shmoe"));
-        Specification<Person> lastNameShmoe = (root, query, cb) -> cb.equal(root.get("lastName"), "Shmoe");
+  @Test
+  void search_for_combines_with_other_specifications() {
+    personRepository.save(new Person("Joe", "Shmoe"));
+    personRepository.save(new Person("Joe", "Black"));
+    personRepository.save(new Person("Ann", "Shmoe"));
+    Specification<Person> lastNameShmoe =
+        (root, query, cb) -> cb.equal(root.get("lastName"), "Shmoe");
 
-        Page<Person> page = personRepository.findAll(personRepository.searchFor("joe").and(lastNameShmoe), Pageable.unpaged());
+    Page<Person> page =
+        personRepository.findAll(
+            personRepository.searchFor("joe").and(lastNameShmoe), Pageable.unpaged());
 
-        assertThat(page.getContent()).extracting(Person::getFirstName, Person::getLastName)
-                .containsExactly(tuple("Joe", "Shmoe"));
-    }
+    assertThat(page.getContent())
+        .extracting(Person::getFirstName, Person::getLastName)
+        .containsExactly(tuple("Joe", "Shmoe"));
+  }
 
-    @Test
-    void search_for_a_blank_term_matches_everything() {
-        personRepository.save(new Person("Joe", "Shmoe"));
-        personRepository.save(new Person("Ann", "Black"));
+  @Test
+  void search_for_a_blank_term_matches_everything() {
+    personRepository.save(new Person("Joe", "Shmoe"));
+    personRepository.save(new Person("Ann", "Black"));
 
-        assertThat(personRepository.findAll(personRepository.searchFor("  "), Pageable.unpaged())
-                .getTotalElements()).isEqualTo(2);
-    }
+    assertThat(
+            personRepository
+                .findAll(personRepository.searchFor("  "), Pageable.unpaged())
+                .getTotalElements())
+        .isEqualTo(2);
+  }
 
-    @Test
-    void searchShouldReturnMatchingRecords() {
-        final var person = new Person("Joe", "Shmoe");
+  @Test
+  void searchShouldReturnMatchingRecords() {
+    final var person = new Person("Joe", "Shmoe");
 
-        personRepository.save(person);
-        personRepository.save(new Person("ABC", "abc"));
+    personRepository.save(person);
+    personRepository.save(new Person("ABC", "abc"));
 
-        Page<Person> page = personRepository.search("moe", Pageable.unpaged());
-        assertThat(page.getTotalElements()).isEqualTo(1);
-    }
+    Page<Person> page = personRepository.search("moe", Pageable.unpaged());
+    assertThat(page.getTotalElements()).isEqualTo(1);
+  }
 
-    @Test
-    void nullSearchShouldReturnAllRecords() {
-        final var person = new Person("Joe", "Shmoe");
-        assertThat(person.getId()).isNotNull();
-        assertThat(person.getVersion()).isNull();
+  @Test
+  void nullSearchShouldReturnAllRecords() {
+    final var person = new Person("Joe", "Shmoe");
+    assertThat(person.getId()).isNotNull();
+    assertThat(person.getVersion()).isNull();
 
-        personRepository.save(person);
+    personRepository.save(person);
 
-        Page<Person> page = personRepository.search(null, Pageable.unpaged());
-        assertThat(page.getTotalElements()).isEqualTo(1);
-    }
+    Page<Person> page = personRepository.search(null, Pageable.unpaged());
+    assertThat(page.getTotalElements()).isEqualTo(1);
+  }
 
-    @Test
-    void blankSearchTermShouldReturnAllRecords() {
-        final var person = new Person("Joe", "Shmoe");
-        assertThat(person.getId()).isNotNull();
-        assertThat(person.getVersion()).isNull();
+  @Test
+  void blankSearchTermShouldReturnAllRecords() {
+    final var person = new Person("Joe", "Shmoe");
+    assertThat(person.getId()).isNotNull();
+    assertThat(person.getVersion()).isNull();
 
-        personRepository.save(person);
+    personRepository.save(person);
 
-        Page<Person> page = personRepository.search("", Pageable.unpaged());
-        assertThat(page.getTotalElements()).isEqualTo(1);
-    }
+    Page<Person> page = personRepository.search("", Pageable.unpaged());
+    assertThat(page.getTotalElements()).isEqualTo(1);
+  }
 
-    @Test
-    void emptySearchTermShouldReturnAllRecords() {
-        final var person = new Person(UUID.randomUUID(), "Joe", "Shmoe");
-        assertThat(person.getId()).isNotNull();
-        assertThat(person.getVersion()).isNull();
+  @Test
+  void emptySearchTermShouldReturnAllRecords() {
+    final var person = new Person(UUID.randomUUID(), "Joe", "Shmoe");
+    assertThat(person.getId()).isNotNull();
+    assertThat(person.getVersion()).isNull();
 
-        personRepository.save(person);
+    personRepository.save(person);
 
-        Page<Person> page = personRepository.search(" ", Pageable.unpaged());
-        assertThat(page.getTotalElements()).isEqualTo(1);
-    }
+    Page<Person> page = personRepository.search(" ", Pageable.unpaged());
+    assertThat(page.getTotalElements()).isEqualTo(1);
+  }
 
-    @Test
-    void searchingByPropertyShouldReturnMatchingRecords() {
-        final var animal = new Animal();
-        animal.setName("Dog");
-        assertThat(animal.getId()).isNotNull();
-        assertThat(animal.getVersion()).isNull();
+  @Test
+  void searchingByPropertyShouldReturnMatchingRecords() {
+    final var animal = new Animal();
+    animal.setName("Dog");
+    assertThat(animal.getId()).isNotNull();
+    assertThat(animal.getVersion()).isNull();
 
-        animalRepository.save(animal);
+    animalRepository.save(animal);
 
-        Page<Animal> page = animalRepository.search("og", Pageable.unpaged());
-        assertThat(page.getTotalElements()).isEqualTo(1);
-    }
+    Page<Animal> page = animalRepository.search("og", Pageable.unpaged());
+    assertThat(page.getTotalElements()).isEqualTo(1);
+  }
 }

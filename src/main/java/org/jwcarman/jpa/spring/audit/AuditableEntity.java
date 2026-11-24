@@ -1,8 +1,25 @@
+/*
+ * Copyright © 2025 James Carman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.jwcarman.jpa.spring.audit;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.Getter;
 import org.jwcarman.jpa.entity.BaseEntity;
 import org.springframework.data.annotation.CreatedBy;
@@ -11,20 +28,16 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.Instant;
-import java.util.UUID;
-
 /**
  * Extends {@link BaseEntity} to provide auditing capabilities.
- * <p>
- * This class automatically tracks the creation and modification timestamps, as well as the user responsible for these changes.
- * It integrates with Spring Data JPA's auditing feature, which requires enabling auditing via
- * {@code @EnableJpaAuditing} in a Spring configuration class.
- * </p>
+ *
+ * <p>This class automatically tracks the creation and modification timestamps, as well as the user
+ * responsible for these changes. It integrates with Spring Data JPA's auditing feature, which
+ * requires enabling auditing via {@code @EnableJpaAuditing} in a Spring configuration class.
  *
  * <h2>Usage</h2>
- * <pre>
- * {@code
+ *
+ * <pre>{@code
  * @Entity
  * public class User extends AuditableEntity {
  *     private String name;
@@ -42,13 +55,14 @@ import java.util.UUID;
  *         return name;
  *     }
  * }
- * }
- * </pre>
+ * }</pre>
  *
  * <h2>Requirements</h2>
+ *
  * <ul>
- *     <li>Spring Data JPA auditing must be enabled using {@code @EnableJpaAuditing}.</li>
- *     <li>An {@code AuditorAware} bean must be configured to track users (for {@code @CreatedBy} and {@code @LastModifiedBy}).</li>
+ *   <li>Spring Data JPA auditing must be enabled using {@code @EnableJpaAuditing}.
+ *   <li>An {@code AuditorAware} bean must be configured to track users (for {@code @CreatedBy} and
+ *       {@code @LastModifiedBy}).
  * </ul>
  */
 @MappedSuperclass
@@ -56,92 +70,83 @@ import java.util.UUID;
 @Getter
 public abstract class AuditableEntity extends BaseEntity {
 
-// ------------------------------ FIELDS ------------------------------
+  // ------------------------------ FIELDS ------------------------------
 
-    /**
-     * The timestamp when the entity was created.
-     * <p>
-     * Automatically populated by Spring Data JPA auditing and cannot be updated after creation.
-     * </p>
-     */
-    @CreatedDate
-    @Column(updatable = false)
-    private Instant createdDate;
+  /**
+   * The timestamp when the entity was created.
+   *
+   * <p>Automatically populated by Spring Data JPA auditing and cannot be updated after creation.
+   */
+  @CreatedDate
+  @Column(updatable = false)
+  private Instant createdDate;
 
-    /**
-     * The timestamp when the entity was last modified.
-     * <p>
-     * Automatically updated whenever the entity is modified.
-     * </p>
-     */
-    @LastModifiedDate
-    private Instant modifiedDate;
+  /**
+   * The timestamp when the entity was last modified.
+   *
+   * <p>Automatically updated whenever the entity is modified.
+   */
+  @LastModifiedDate private Instant modifiedDate;
 
-    /**
-     * The username or identifier of the user who created this entity.
-     * <p>
-     * Automatically populated if an {@code AuditorAware} bean is configured.
-     * </p>
-     */
-    @CreatedBy
-    @Column(updatable = false)
-    private String createdBy;
+  /**
+   * The username or identifier of the user who created this entity.
+   *
+   * <p>Automatically populated if an {@code AuditorAware} bean is configured.
+   */
+  @CreatedBy
+  @Column(updatable = false)
+  private String createdBy;
 
-    /**
-     * The username or identifier of the last user who modified this entity.
-     * <p>
-     * Automatically updated whenever the entity is modified.
-     * </p>
-     */
-    @LastModifiedBy
-    private String modifiedBy;
+  /**
+   * The username or identifier of the last user who modified this entity.
+   *
+   * <p>Automatically updated whenever the entity is modified.
+   */
+  @LastModifiedBy private String modifiedBy;
 
-// --------------------------- CONSTRUCTORS ---------------------------
+  // --------------------------- CONSTRUCTORS ---------------------------
 
-    /**
-     * Default constructor required for JPA.
-     * <p>
-     * This constructor is protected to prevent direct instantiation while allowing subclassing.
-     * </p>
-     */
-    protected AuditableEntity() {
-    }
+  /**
+   * Default constructor required for JPA.
+   *
+   * <p>This constructor is protected to prevent direct instantiation while allowing subclassing.
+   */
+  protected AuditableEntity() {}
 
-    /**
-     * Constructs an auditable entity with a predefined UUID.
-     *
-     * @param id the UUID to assign to the entity
-     * @throws NullPointerException if the provided UUID is null
-     */
-    protected AuditableEntity(UUID id) {
-        super(id);
-    }
+  /**
+   * Constructs an auditable entity with a predefined UUID.
+   *
+   * @param id the UUID to assign to the entity
+   * @throws NullPointerException if the provided UUID is null
+   */
+  protected AuditableEntity(UUID id) {
+    super(id);
+  }
 
-// ------------------------ CANONICAL METHODS ------------------------
+  // ------------------------ CANONICAL METHODS ------------------------
 
-    /**
-     * Determines equality by identifier only, exactly as {@link BaseEntity#equals(Object)} does.
-     * <p>
-     * The audit fields are deliberately excluded: they describe when and by whom the row was written, not which
-     * entity it is, and they change on every update. Including them would make an entity unequal to itself after a
-     * save, and unequal to its own lazy proxy.
-     * </p>
-     *
-     * @param o the object to compare against
-     * @return {@code true} if both entities have the same UUID, {@code false} otherwise
-     */
-    @Override
-    public boolean equals(Object o) {
-        return super.equals(o);
-    }
+  /**
+   * Determines equality by identifier only, exactly as {@link BaseEntity#equals(Object)} does.
+   *
+   * <p>The audit fields are deliberately excluded: they describe when and by whom the row was
+   * written, not which entity it is, and they change on every update. Including them would make an
+   * entity unequal to itself after a save, and unequal to its own lazy proxy.
+   *
+   * @param o the object to compare against
+   * @return {@code true} if both entities have the same UUID, {@code false} otherwise
+   */
+  @Override
+  public boolean equals(Object o) {
+    return super.equals(o);
+  }
 
-    /**
-     * Computes a hash code from the identifier only, consistent with {@link #equals(Object)}.
-     *
-     * @return a stable hash code based on the entity's UUID
-     */
-    @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
+  /**
+   * Computes a hash code from the identifier only, consistent with {@link #equals(Object)}.
+   *
+   * @return a stable hash code based on the entity's UUID
+   */
+  @Override
+  public int hashCode() {
+    return super.hashCode();
+  }
 }

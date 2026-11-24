@@ -1,3 +1,18 @@
+/*
+ * Copyright © 2025 James Carman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.jwcarman.jpa.spring.web;
 
 import org.jwcarman.jpa.pagination.PageSpec;
@@ -9,12 +24,13 @@ import org.springframework.lang.Nullable;
  *
  * <p>This class implements {@link PageSpec} and is designed to automatically bind query parameters
  * to pagination settings in Spring REST controllers. All fields are optional, allowing flexible
- * pagination requests. Simply add as a method parameter - Spring will automatically bind the
- * query parameters.</p>
+ * pagination requests. Simply add as a method parameter - Spring will automatically bind the query
+ * parameters.
  *
  * <h2>Usage in REST Controllers</h2>
  *
  * <h3>Basic Usage</h3>
+ *
  * <pre>{@code
  * @RestController
  * @RequestMapping("/api/persons")
@@ -37,6 +53,7 @@ import org.springframework.lang.Nullable;
  * }</pre>
  *
  * <h3>With Search Parameters</h3>
+ *
  * <pre>{@code
  * @GetMapping
  * public PageDto<PersonDto> searchPersons(
@@ -51,6 +68,7 @@ import org.springframework.lang.Nullable;
  * }</pre>
  *
  * <h3>Service Layer Integration</h3>
+ *
  * <pre>{@code
  * @Service
  * public class PersonService {
@@ -68,16 +86,20 @@ import org.springframework.lang.Nullable;
  * }</pre>
  *
  * <h2>Query Parameter Mapping</h2>
- * <p>The following query parameters are automatically bound:</p>
+ *
+ * <p>The following query parameters are automatically bound:
+ *
  * <ul>
- *   <li>{@code pageIndex} - Zero-based page number (e.g., 0, 1, 2...)</li>
- *   <li>{@code pageSize} - Number of items per page (e.g., 10, 20, 50...)</li>
- *   <li>{@code sortBy} - Sort field name as string (e.g., "LAST_NAME", "CREATED")</li>
- *   <li>{@code sortDirection} - Sort direction: "ASC" or "DESC"</li>
+ *   <li>{@code pageIndex} - Zero-based page number (e.g., 0, 1, 2...)
+ *   <li>{@code pageSize} - Number of items per page (e.g., 10, 20, 50...)
+ *   <li>{@code sortBy} - Sort field name as string (e.g., "LAST_NAME", "CREATED")
+ *   <li>{@code sortDirection} - Sort direction: "ASC" or "DESC"
  * </ul>
  *
  * <h2>Testing</h2>
- * <p>Create instances using the canonical constructor:</p>
+ *
+ * <p>Create instances using the canonical constructor:
+ *
  * <pre>{@code
  * @Test
  * void shouldPaginateResults() {
@@ -102,8 +124,10 @@ import org.springframework.lang.Nullable;
  * }</pre>
  *
  * <h2>Custom Parameter Names</h2>
+ *
  * <p>If you need different URL parameter names (e.g., {@code page} instead of {@code pageIndex}),
- * use individual {@code @RequestParam} annotations and build the {@code PageParams} manually:</p>
+ * use individual {@code @RequestParam} annotations and build the {@code PageParams} manually:
+ *
  * <pre>{@code
  * @GetMapping
  * public PageDto<PersonDto> getPersons(
@@ -122,16 +146,15 @@ import org.springframework.lang.Nullable;
  * }</pre>
  *
  * @see PageSpec
- * @param pageIndex      the zero-based page number, may be null (defaults to 0)
- * @param pageSize       the number of items per page, may be null (defaults to 20)
- * @param sortBy         the sort field name as string (e.g., "LAST_NAME"), may be null for unsorted
- * @param sortDirection  the sort direction (ASC or DESC), may be null (defaults to ASC)
+ * @param pageIndex the zero-based page number, may be null (defaults to 0)
+ * @param pageSize the number of items per page, may be null (defaults to 20)
+ * @param sortBy the sort field name as string (e.g., "LAST_NAME"), may be null for unsorted
+ * @param sortDirection the sort direction (ASC or DESC), may be null (defaults to ASC)
  * @see org.jwcarman.jpa.spring.page.Paginator
  */
 public record PageParams(
     @Nullable Integer pageIndex,
     @Nullable Integer pageSize,
     @Nullable String sortBy,
-    @Nullable SortDirection sortDirection
-) implements PageSpec {
-}
+    @Nullable SortDirection sortDirection)
+    implements PageSpec {}

@@ -1,12 +1,28 @@
+/*
+ * Copyright © 2025 James Carman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.jwcarman.jpa.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import jakarta.persistence.EntityManager;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
 import org.hibernate.Hibernate;
-import org.jwcarman.jpa.pagination.PageDto;
-import org.jwcarman.jpa.pagination.PageSpec;
-import org.jwcarman.jpa.pagination.SortDirection;
-import org.jwcarman.jpa.spring.page.Paginator;
-import org.jwcarman.jpa.spring.search.SearchableRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayNameGeneration;
 import org.junit.jupiter.api.DisplayNameGenerator;
@@ -15,372 +31,397 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.jwcarman.jpa.pagination.PageDto;
+import org.jwcarman.jpa.pagination.PageSpec;
+import org.jwcarman.jpa.pagination.SortDirection;
+import org.jwcarman.jpa.spring.page.Paginator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 /**
  * Integration tests for pagination, sorting, and search functionality with real databases.
- * <p>
- * This test verifies that the JPA utilities work correctly with different database dialects
- * and SQL implementations. It tests end-to-end functionality including:
- * </p>
+ *
+ * <p>This test verifies that the JPA utilities work correctly with different database dialects and
+ * SQL implementations. It tests end-to-end functionality including:
+ *
  * <ul>
- *   <li>Entity persistence and retrieval</li>
- *   <li>Pagination with different page sizes</li>
- *   <li>Sorting by different fields and directions</li>
- *   <li>Case-insensitive search across multiple fields</li>
- *   <li>SQL wildcard escaping</li>
+ *   <li>Entity persistence and retrieval
+ *   <li>Pagination with different page sizes
+ *   <li>Sorting by different fields and directions
+ *   <li>Case-insensitive search across multiple fields
+ *   <li>SQL wildcard escaping
  * </ul>
  */
-@DataJpaTest(showSql = false, properties = {
-        "spring.jpa.hibernate.ddl-auto=create-drop"
-})
+@DataJpaTest(
+    showSql = false,
+    properties = {"spring.jpa.hibernate.ddl-auto=create-drop"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ContextConfiguration(classes = {TestConfig.class})
 public abstract class DatabaseIT {
 
-    private static final Paginator PAGINATOR = Paginator.of(TestPerson.class, TestPersonSort.class);
+  private static final Paginator PAGINATOR = Paginator.of(TestPerson.class, TestPersonSort.class);
 
-    @Autowired
-    protected TestPersonRepository personRepository;
+  @Autowired protected TestPersonRepository personRepository;
 
-    @Autowired
-    private EntityManager entityManager;
+  @Autowired private EntityManager entityManager;
+
+  @BeforeEach
+  void setUp() {
+    personRepository.deleteAll();
+
+    // Create test data with predictable ordering
+    personRepository.save(
+        new TestPerson("Alice", "Anderson", "alice@example.com", "Columbus", "OH"));
+    personRepository.save(new TestPerson("Bob", "Brown", "bob@example.com", "Cleveland", "OH"));
+    personRepository.save(new TestPerson("Charlie", "Chen", "charlie@example.com", "Austin", "TX"));
+    personRepository.save(new TestPerson("Diana", "Davis", "diana@example.com"));
+    personRepository.save(new TestPerson("Eve", "Evans", "eve@example.com"));
+    personRepository.save(new TestPerson("Frank", "Fisher", "frank@example.com"));
+    personRepository.save(new TestPerson("Grace", "Garcia", "grace@example.com"));
+    personRepository.save(new TestPerson("Henry", "Harris", "henry@example.com"));
+    personRepository.save(new TestPerson("Ivy", "Ibrahim", "ivy@example.com"));
+    personRepository.save(new TestPerson("Jack", "Jackson", "jack@example.com"));
+
+    // Add some with special characters for wildcard testing
+    personRepository.save(new TestPerson("TestUser", "WithUnderscore", "test_user@example.com"));
+    personRepository.save(new TestPerson("TestUser2", "WithPercent", "test%user@example.com"));
+  }
+
+  @Test
+  void shouldPaginateResults() {
+    Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 5, null, null));
+
+    Page<TestPerson> page = personRepository.findAll(pageable);
+
+    assertThat(page.getContent()).hasSize(5);
+    assertThat(page.getTotalElements()).isEqualTo(12);
+    assertThat(page.getTotalPages()).isEqualTo(3);
+    assertThat(page.hasNext()).isTrue();
+    assertThat(page.hasPrevious()).isFalse();
+  }
+
+  @Test
+  void shouldSortByFirstNameAscending() {
+    Pageable pageable =
+        PAGINATOR.pageableOf(new TestPageSpec(0, 20, "FIRST_NAME", SortDirection.ASC));
+
+    Page<TestPerson> page = personRepository.findAll(pageable);
+
+    assertThat(page.getContent()).hasSize(12);
+    assertThat(page.getContent().get(0).getFirstName()).isEqualTo("Alice");
+    assertThat(page.getContent().get(1).getFirstName()).isEqualTo("Bob");
+  }
+
+  @Test
+  void shouldSortByLastNameDescending() {
+    Pageable pageable =
+        PAGINATOR.pageableOf(new TestPageSpec(0, 20, "LAST_NAME", SortDirection.DESC));
+
+    Page<TestPerson> page = personRepository.findAll(pageable);
+
+    assertThat(page.getContent()).hasSize(12);
+    // Verify descending order with known data
+    assertThat(page.getContent().get(0).getLastName()).isEqualTo("WithUnderscore");
+    assertThat(page.getContent().get(1).getLastName()).isEqualTo("WithPercent");
+    assertThat(page.getContent().get(2).getLastName()).isEqualTo("Jackson");
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "alice,              Anderson",
+    "brown,              Brown",
+    "charlie@example.com, Chen",
+    "DIANA,              Davis",
+    "test_user,          WithUnderscore",
+    "test%user,          WithPercent"
+  })
+  void shouldSearchAndFindExactMatch(String searchTerm, String expectedLastName) {
+    Page<TestPerson> page = personRepository.search(searchTerm, Pageable.unpaged());
+
+    assertThat(page.getTotalElements()).isEqualTo(1);
+    assertThat(page.getContent().get(0).getLastName()).isEqualTo(expectedLastName);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "alice anderson,            Anderson",
+    "anderson alice,            Anderson",
+    "ALICE   Anderson,          Anderson",
+    "alice example.com,         Anderson",
+    "test% example,             WithPercent",
+    "test_ withunderscore,      WithUnderscore"
+  })
+  void matches_every_word_across_fields_in_any_order(String searchTerm, String expectedLastName) {
+    Page<TestPerson> page = personRepository.search(searchTerm, Pageable.unpaged());
+
+    assertThat(page.getContent())
+        .extracting(TestPerson::getLastName)
+        .containsExactly(expectedLastName);
+  }
+
+  @Test
+  void excludes_rows_missing_any_word() {
+    assertThat(personRepository.search("alice brown", Pageable.unpaged()).getTotalElements())
+        .isZero();
+  }
+
+  @Test
+  void ignores_words_beyond_the_maximum() {
+    // Ten words that all occur in Alice Anderson's fields, then one that occurs nowhere.
+    Page<TestPerson> page =
+        personRepository.search("alice anderson a l i c e n d r zzz", Pageable.unpaged());
+
+    assertThat(page.getContent()).extracting(TestPerson::getFirstName).contains("Alice");
+  }
+
+  @Test
+  void shouldSearchWithPartialMatch() {
+    Page<TestPerson> page = personRepository.search("ar", Pageable.unpaged());
+
+    // Should match "Charlie", "Garcia", "Harris"
+    assertThat(page.getTotalElements()).isGreaterThanOrEqualTo(3);
+  }
+
+  @Test
+  void shouldCombineSearchAndPagination() {
+    Pageable pageable =
+        PAGINATOR.pageableOf(new TestPageSpec(0, 5, "FIRST_NAME", SortDirection.ASC));
+
+    Page<TestPerson> page = personRepository.search("e", pageable);
+
+    // Should find names containing 'e' (Alice, Charlie, Eve, Grace, Henry, etc.)
+    assertThat(page.getTotalElements()).isGreaterThan(0);
+    assertThat(page.getContent()).hasSizeLessThanOrEqualTo(5);
+
+    // Should be sorted by first name ascending
+    for (int i = 0; i < page.getContent().size() - 1; i++) {
+      String current = page.getContent().get(i).getFirstName();
+      String next = page.getContent().get(i + 1).getFirstName();
+      assertThat(current.compareTo(next)).isLessThanOrEqualTo(0);
+    }
+  }
+
+  @Test
+  void shouldHandleEmptySearchResults() {
+    Page<TestPerson> page = personRepository.search("nonexistent", Pageable.unpaged());
+
+    assertThat(page.getTotalElements()).isZero();
+    assertThat(page.getContent()).isEmpty();
+  }
+
+  @Test
+  void shouldHandleNullSearch() {
+    Page<TestPerson> page = personRepository.search(null, Pageable.unpaged());
+
+    // Null search should return all results
+    assertThat(page.getTotalElements()).isEqualTo(12);
+  }
+
+  @Test
+  void shouldRespectMaxPageSize() {
+    Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 5000, null, null));
+
+    // Should be clamped to DEFAULT_MAX_PAGE_SIZE (100)
+    assertThat(pageable.getPageSize()).isEqualTo(Paginator.DEFAULT_MAX_PAGE_SIZE);
+  }
+
+  @Test
+  void shouldHandleMultiplePageNavigation() {
+    // First page
+    Pageable firstPage =
+        PAGINATOR.pageableOf(new TestPageSpec(0, 3, "FIRST_NAME", SortDirection.ASC));
+    Page<TestPerson> page1 = personRepository.findAll(firstPage);
+
+    assertThat(page1.getContent()).hasSize(3);
+    assertThat(page1.hasNext()).isTrue();
+
+    // Second page
+    Pageable secondPage =
+        PAGINATOR.pageableOf(new TestPageSpec(1, 3, "FIRST_NAME", SortDirection.ASC));
+    Page<TestPerson> page2 = personRepository.findAll(secondPage);
+
+    assertThat(page2.getContent()).hasSize(3);
+    assertThat(page2.hasPrevious()).isTrue();
+
+    // Verify no overlap
+    assertThat(page1.getContent()).doesNotContainAnyElementsOf(page2.getContent());
+  }
+
+  @Test
+  void pages_through_tied_sort_values_without_repeats_or_gaps() {
+    personRepository.deleteAll();
+    for (int i = 0; i < 100; i++) {
+      personRepository.save(new TestPerson("Same", "Tied", "person" + i + "@example.com"));
+    }
+    personRepository.flush();
+
+    List<UUID> seen = new ArrayList<>();
+    for (int pageIndex = 0; pageIndex < 20; pageIndex++) {
+      PageDto<UUID> page =
+          PAGINATOR.paginate(
+              new TestPageSpec(pageIndex, 5, "LAST_NAME", SortDirection.ASC),
+              personRepository::findAll,
+              TestPerson::getId);
+      seen.addAll(page.data());
+    }
+
+    assertThat(seen).hasSize(100).doesNotHaveDuplicates();
+  }
+
+  @Test
+  void pages_through_tied_sort_values_using_a_configured_tiebreaker() {
+    personRepository.deleteAll();
+    for (int i = 0; i < 30; i++) {
+      personRepository.save(
+          new TestPerson("Same", "Tied", String.format("person%02d@example.com", i)));
+    }
+    personRepository.flush();
+    Paginator byEmail =
+        Paginator.of(TestPerson.class, TestPersonSort.class, cfg -> cfg.tiebreaker("email"));
+
+    List<String> seen = new ArrayList<>();
+    for (int pageIndex = 0; pageIndex < 6; pageIndex++) {
+      seen.addAll(
+          byEmail
+              .paginate(
+                  new TestPageSpec(pageIndex, 5, "LAST_NAME", SortDirection.DESC),
+                  personRepository::findAll,
+                  TestPerson::getEmail)
+              .data());
+    }
+
+    assertThat(seen)
+        .hasSize(30)
+        .doesNotHaveDuplicates()
+        .isSortedAccordingTo(Comparator.reverseOrder());
+  }
+
+  @Test
+  void lazy_proxy_equals_and_hashes_like_the_loaded_entity() {
+    TestPerson saved =
+        personRepository.saveAndFlush(new TestPerson("Proxy", "Person", "proxy@example.com"));
+    UUID id = saved.getId();
+    entityManager.clear();
+
+    TestPerson proxy = entityManager.getReference(TestPerson.class, id);
+    assertThat(Hibernate.isInitialized(proxy)).isFalse();
+
+    assertThat(proxy).isEqualTo(saved);
+    assertThat(saved).isEqualTo(proxy);
+    assertThat(proxy).hasSameHashCodeAs(saved);
+  }
+
+  private List<String> lastNamesFor(String term) {
+    return personRepository
+        .search(term, Pageable.unpaged())
+        .map(TestPerson::getLastName)
+        .getContent();
+  }
+
+  @Nested
+  @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
+  class Match_modes {
+
+    @Test
+    void finds_by_city_prefix() {
+      assertThat(lastNamesFor("clev")).containsExactly("Brown");
+    }
+
+    @Test
+    void does_not_match_the_middle_of_a_prefix_field() {
+      assertThat(lastNamesFor("eveland")).isEmpty();
+    }
+
+    @Test
+    void finds_by_exact_state_ignoring_case() {
+      assertThat(lastNamesFor("oh")).containsExactlyInAnyOrder("Anderson", "Brown");
+    }
+
+    @Test
+    void treats_wildcards_in_an_exact_word_literally() {
+      assertThat(lastNamesFor("o_")).isEmpty();
+    }
+
+    @Test
+    void matches_each_word_by_its_field_mode() {
+      assertThat(lastNamesFor("bob oh")).containsExactly("Brown");
+    }
+
+    @Test
+    void excludes_a_row_missing_any_word() {
+      assertThat(lastNamesFor("charlie oh")).isEmpty();
+    }
+  }
+
+  @Nested
+  @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
+  class Literal_characters {
 
     @BeforeEach
-    void setUp() {
-        personRepository.deleteAll();
-
-        // Create test data with predictable ordering
-        personRepository.save(new TestPerson("Alice", "Anderson", "alice@example.com", "Columbus", "OH"));
-        personRepository.save(new TestPerson("Bob", "Brown", "bob@example.com", "Cleveland", "OH"));
-        personRepository.save(new TestPerson("Charlie", "Chen", "charlie@example.com", "Austin", "TX"));
-        personRepository.save(new TestPerson("Diana", "Davis", "diana@example.com"));
-        personRepository.save(new TestPerson("Eve", "Evans", "eve@example.com"));
-        personRepository.save(new TestPerson("Frank", "Fisher", "frank@example.com"));
-        personRepository.save(new TestPerson("Grace", "Garcia", "grace@example.com"));
-        personRepository.save(new TestPerson("Henry", "Harris", "henry@example.com"));
-        personRepository.save(new TestPerson("Ivy", "Ibrahim", "ivy@example.com"));
-        personRepository.save(new TestPerson("Jack", "Jackson", "jack@example.com"));
-
-        // Add some with special characters for wildcard testing
-        personRepository.save(new TestPerson("TestUser", "WithUnderscore", "test_user@example.com"));
-        personRepository.save(new TestPerson("TestUser2", "WithPercent", "test%user@example.com"));
-    }
-
-    @Test
-    void shouldPaginateResults() {
-        Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 5, null, null));
-
-        Page<TestPerson> page = personRepository.findAll(pageable);
-
-        assertThat(page.getContent()).hasSize(5);
-        assertThat(page.getTotalElements()).isEqualTo(12);
-        assertThat(page.getTotalPages()).isEqualTo(3);
-        assertThat(page.hasNext()).isTrue();
-        assertThat(page.hasPrevious()).isFalse();
-    }
-
-    @Test
-    void shouldSortByFirstNameAscending() {
-        Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 20, "FIRST_NAME", SortDirection.ASC));
-
-        Page<TestPerson> page = personRepository.findAll(pageable);
-
-        assertThat(page.getContent()).hasSize(12);
-        assertThat(page.getContent().get(0).getFirstName()).isEqualTo("Alice");
-        assertThat(page.getContent().get(1).getFirstName()).isEqualTo("Bob");
-    }
-
-    @Test
-    void shouldSortByLastNameDescending() {
-        Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 20, "LAST_NAME", SortDirection.DESC));
-
-        Page<TestPerson> page = personRepository.findAll(pageable);
-
-        assertThat(page.getContent()).hasSize(12);
-        // Verify descending order with known data
-        assertThat(page.getContent().get(0).getLastName()).isEqualTo("WithUnderscore");
-        assertThat(page.getContent().get(1).getLastName()).isEqualTo("WithPercent");
-        assertThat(page.getContent().get(2).getLastName()).isEqualTo("Jackson");
+    void addRowsWithSqlCharacters() {
+      personRepository.save(
+          new TestPerson("Back", "Slash", "back\\slash@example.com", "b\\x", "a\\b"));
+      personRepository.save(new TestPerson("Pat", "Ohare", "o'hare@example.com", "o'x", "q'r"));
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "alice,              Anderson",
-            "brown,              Brown",
-            "charlie@example.com, Chen",
-            "DIANA,              Davis",
-            "test_user,          WithUnderscore",
-            "test%user,          WithPercent"
-    })
-    void shouldSearchAndFindExactMatch(String searchTerm, String expectedLastName) {
-        Page<TestPerson> page = personRepository.search(searchTerm, Pageable.unpaged());
+    @ValueSource(strings = {"\\", "k\\s", "back\\slash", "b\\", "a\\b"})
+    void finds_a_backslash_literally_in_every_mode(String term) {
+      assertThat(lastNamesFor(term)).containsExactly("Slash");
+    }
 
-        assertThat(page.getTotalElements()).isEqualTo(1);
-        assertThat(page.getContent().get(0).getLastName()).isEqualTo(expectedLastName);
+    @Test
+    void does_not_treat_a_doubled_backslash_as_one() {
+      assertThat(lastNamesFor("\\\\")).isEmpty();
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "alice anderson,            Anderson",
-            "anderson alice,            Anderson",
-            "ALICE   Anderson,          Anderson",
-            "alice example.com,         Anderson",
-            "test% example,             WithPercent",
-            "test_ withunderscore,      WithUnderscore"
-    })
-    void matches_every_word_across_fields_in_any_order(String searchTerm, String expectedLastName) {
-        Page<TestPerson> page = personRepository.search(searchTerm, Pageable.unpaged());
+    @ValueSource(strings = {"o'h", "q'r"})
+    void finds_a_quote_literally(String term) {
+      assertThat(lastNamesFor(term)).containsExactly("Ohare");
+    }
+  }
 
-        assertThat(page.getContent()).extracting(TestPerson::getLastName).containsExactly(expectedLastName);
+  @Nested
+  @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
+  class Untrusted_input {
+
+    @ParameterizedTest
+    @ValueSource(
+        strings = {
+          "' OR '1'='1",
+          "\\'||1--",
+          "\\' OR 1=1 --",
+          "'/**/OR/**/1=1--",
+          "%' OR '1'='1",
+          "oh\u0000' --",
+          "\\%",
+          "\\_",
+          "abc\\",
+          "\uD800",
+          "a\uDC00b"
+        })
+    void matches_nothing_and_changes_nothing(String term) {
+      assertThat(lastNamesFor(term)).isEmpty();
+      assertThat(personRepository.count()).isEqualTo(12);
     }
 
     @Test
-    void excludes_rows_missing_any_word() {
-        assertThat(personRepository.search("alice brown", Pageable.unpaged()).getTotalElements()).isZero();
+    void treats_a_nul_character_as_a_separator() {
+      assertThat(lastNamesFor("alice\u0000anderson")).containsExactly("Anderson");
     }
 
     @Test
-    void ignores_words_beyond_the_maximum() {
-        // Ten words that all occur in Alice Anderson's fields, then one that occurs nowhere.
-        Page<TestPerson> page = personRepository.search("alice anderson a l i c e n d r zzz", Pageable.unpaged());
-
-        assertThat(page.getContent()).extracting(TestPerson::getFirstName).contains("Alice");
+    void matches_nothing_for_a_very_long_word() {
+      assertThat(lastNamesFor("a".repeat(100_000))).isEmpty();
     }
+  }
 
-    @Test
-    void shouldSearchWithPartialMatch() {
-        Page<TestPerson> page = personRepository.search("ar", Pageable.unpaged());
-
-        // Should match "Charlie", "Garcia", "Harris"
-        assertThat(page.getTotalElements()).isGreaterThanOrEqualTo(3);
-    }
-
-    @Test
-    void shouldCombineSearchAndPagination() {
-        Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 5, "FIRST_NAME", SortDirection.ASC));
-
-        Page<TestPerson> page = personRepository.search("e", pageable);
-
-        // Should find names containing 'e' (Alice, Charlie, Eve, Grace, Henry, etc.)
-        assertThat(page.getTotalElements()).isGreaterThan(0);
-        assertThat(page.getContent()).hasSizeLessThanOrEqualTo(5);
-
-        // Should be sorted by first name ascending
-        for (int i = 0; i < page.getContent().size() - 1; i++) {
-            String current = page.getContent().get(i).getFirstName();
-            String next = page.getContent().get(i + 1).getFirstName();
-            assertThat(current.compareTo(next)).isLessThanOrEqualTo(0);
-        }
-    }
-
-    @Test
-    void shouldHandleEmptySearchResults() {
-        Page<TestPerson> page = personRepository.search("nonexistent", Pageable.unpaged());
-
-        assertThat(page.getTotalElements()).isZero();
-        assertThat(page.getContent()).isEmpty();
-    }
-
-    @Test
-    void shouldHandleNullSearch() {
-        Page<TestPerson> page = personRepository.search(null, Pageable.unpaged());
-
-        // Null search should return all results
-        assertThat(page.getTotalElements()).isEqualTo(12);
-    }
-
-    @Test
-    void shouldRespectMaxPageSize() {
-        Pageable pageable = PAGINATOR.pageableOf(new TestPageSpec(0, 5000, null, null));
-
-        // Should be clamped to DEFAULT_MAX_PAGE_SIZE (100)
-        assertThat(pageable.getPageSize()).isEqualTo(Paginator.DEFAULT_MAX_PAGE_SIZE);
-    }
-
-    @Test
-    void shouldHandleMultiplePageNavigation() {
-        // First page
-        Pageable firstPage = PAGINATOR.pageableOf(new TestPageSpec(0, 3, "FIRST_NAME", SortDirection.ASC));
-        Page<TestPerson> page1 = personRepository.findAll(firstPage);
-
-        assertThat(page1.getContent()).hasSize(3);
-        assertThat(page1.hasNext()).isTrue();
-
-        // Second page
-        Pageable secondPage = PAGINATOR.pageableOf(new TestPageSpec(1, 3, "FIRST_NAME", SortDirection.ASC));
-        Page<TestPerson> page2 = personRepository.findAll(secondPage);
-
-        assertThat(page2.getContent()).hasSize(3);
-        assertThat(page2.hasPrevious()).isTrue();
-
-        // Verify no overlap
-        assertThat(page1.getContent()).doesNotContainAnyElementsOf(page2.getContent());
-    }
-
-    @Test
-    void pages_through_tied_sort_values_without_repeats_or_gaps() {
-        personRepository.deleteAll();
-        for (int i = 0; i < 100; i++) {
-            personRepository.save(new TestPerson("Same", "Tied", "person" + i + "@example.com"));
-        }
-        personRepository.flush();
-
-        List<UUID> seen = new ArrayList<>();
-        for (int pageIndex = 0; pageIndex < 20; pageIndex++) {
-            PageDto<UUID> page = PAGINATOR.paginate(
-                    new TestPageSpec(pageIndex, 5, "LAST_NAME", SortDirection.ASC),
-                    personRepository::findAll,
-                    TestPerson::getId
-            );
-            seen.addAll(page.data());
-        }
-
-        assertThat(seen).hasSize(100).doesNotHaveDuplicates();
-    }
-
-    @Test
-    void pages_through_tied_sort_values_using_a_configured_tiebreaker() {
-        personRepository.deleteAll();
-        for (int i = 0; i < 30; i++) {
-            personRepository.save(new TestPerson("Same", "Tied", String.format("person%02d@example.com", i)));
-        }
-        personRepository.flush();
-        Paginator byEmail = Paginator.of(TestPerson.class, TestPersonSort.class, cfg -> cfg.tiebreaker("email"));
-
-        List<String> seen = new ArrayList<>();
-        for (int pageIndex = 0; pageIndex < 6; pageIndex++) {
-            seen.addAll(byEmail.paginate(
-                    new TestPageSpec(pageIndex, 5, "LAST_NAME", SortDirection.DESC),
-                    personRepository::findAll,
-                    TestPerson::getEmail
-            ).data());
-        }
-
-        assertThat(seen).hasSize(30).doesNotHaveDuplicates().isSortedAccordingTo(Comparator.reverseOrder());
-    }
-
-    @Test
-    void lazy_proxy_equals_and_hashes_like_the_loaded_entity() {
-        TestPerson saved = personRepository.saveAndFlush(new TestPerson("Proxy", "Person", "proxy@example.com"));
-        UUID id = saved.getId();
-        entityManager.clear();
-
-        TestPerson proxy = entityManager.getReference(TestPerson.class, id);
-        assertThat(Hibernate.isInitialized(proxy)).isFalse();
-
-        assertThat(proxy).isEqualTo(saved);
-        assertThat(saved).isEqualTo(proxy);
-        assertThat(proxy).hasSameHashCodeAs(saved);
-    }
-
-    private List<String> lastNamesFor(String term) {
-        return personRepository.search(term, Pageable.unpaged()).map(TestPerson::getLastName).getContent();
-    }
-
-    @Nested
-    @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
-    class Match_modes {
-
-        @Test
-        void finds_by_city_prefix() {
-            assertThat(lastNamesFor("clev")).containsExactly("Brown");
-        }
-
-        @Test
-        void does_not_match_the_middle_of_a_prefix_field() {
-            assertThat(lastNamesFor("eveland")).isEmpty();
-        }
-
-        @Test
-        void finds_by_exact_state_ignoring_case() {
-            assertThat(lastNamesFor("oh")).containsExactlyInAnyOrder("Anderson", "Brown");
-        }
-
-        @Test
-        void treats_wildcards_in_an_exact_word_literally() {
-            assertThat(lastNamesFor("o_")).isEmpty();
-        }
-
-        @Test
-        void matches_each_word_by_its_field_mode() {
-            assertThat(lastNamesFor("bob oh")).containsExactly("Brown");
-        }
-
-        @Test
-        void excludes_a_row_missing_any_word() {
-            assertThat(lastNamesFor("charlie oh")).isEmpty();
-        }
-    }
-
-    @Nested
-    @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
-    class Literal_characters {
-
-        @BeforeEach
-        void addRowsWithSqlCharacters() {
-            personRepository.save(new TestPerson("Back", "Slash", "back\\slash@example.com", "b\\x", "a\\b"));
-            personRepository.save(new TestPerson("Pat", "Ohare", "o'hare@example.com", "o'x", "q'r"));
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"\\", "k\\s", "back\\slash", "b\\", "a\\b"})
-        void finds_a_backslash_literally_in_every_mode(String term) {
-            assertThat(lastNamesFor(term)).containsExactly("Slash");
-        }
-
-        @Test
-        void does_not_treat_a_doubled_backslash_as_one() {
-            assertThat(lastNamesFor("\\\\")).isEmpty();
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {"o'h", "q'r"})
-        void finds_a_quote_literally(String term) {
-            assertThat(lastNamesFor(term)).containsExactly("Ohare");
-        }
-    }
-
-    @Nested
-    @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
-    class Untrusted_input {
-
-        @ParameterizedTest
-        @ValueSource(strings = {"' OR '1'='1", "\\'||1--", "\\' OR 1=1 --", "'/**/OR/**/1=1--", "%' OR '1'='1",
-                "oh\u0000' --", "\\%", "\\_", "abc\\", "\uD800", "a\uDC00b"})
-        void matches_nothing_and_changes_nothing(String term) {
-            assertThat(lastNamesFor(term)).isEmpty();
-            assertThat(personRepository.count()).isEqualTo(12);
-        }
-
-        @Test
-        void treats_a_nul_character_as_a_separator() {
-            assertThat(lastNamesFor("alice\u0000anderson")).containsExactly("Anderson");
-        }
-
-        @Test
-        void matches_nothing_for_a_very_long_word() {
-            assertThat(lastNamesFor("a".repeat(100_000))).isEmpty();
-        }
-    }
-
-    record TestPageSpec(
-            Integer pageIndex,
-            Integer pageSize,
-            String sortBy,
-            SortDirection sortDirection
-    ) implements PageSpec {
-    }
+  record TestPageSpec(
+      Integer pageIndex, Integer pageSize, String sortBy, SortDirection sortDirection)
+      implements PageSpec {}
 }

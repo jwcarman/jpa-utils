@@ -1,28 +1,43 @@
+/*
+ * Copyright © 2025 James Carman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.jwcarman.jpa.spring.search;
-
-import org.hibernate.resource.jdbc.spi.StatementInspector;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import org.hibernate.resource.jdbc.spi.StatementInspector;
 
 /**
- * Records every SQL statement Hibernate prepares, so tests can check what text reaches the database.
+ * Records every SQL statement Hibernate prepares, so tests can check what text reaches the
+ * database.
  */
 public class CapturingStatementInspector implements StatementInspector {
 
-    private static final List<String> STATEMENTS = new CopyOnWriteArrayList<>();
+  private static final List<String> STATEMENTS = new CopyOnWriteArrayList<>();
 
-    static void clear() {
-        STATEMENTS.clear();
-    }
+  static void clear() {
+    STATEMENTS.clear();
+  }
 
-    static List<String> statements() {
-        return List.copyOf(STATEMENTS);
-    }
+  static List<String> statements() {
+    return List.copyOf(STATEMENTS);
+  }
 
-    @Override
-    public String inspect(String sql) {
-        STATEMENTS.add(sql);
-        return sql;
-    }
+  @Override
+  public String inspect(String sql) {
+    STATEMENTS.add(sql);
+    return sql;
+  }
 }

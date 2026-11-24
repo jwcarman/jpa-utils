@@ -1,24 +1,41 @@
+/*
+ * Copyright © 2025 James Carman
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.jwcarman.jpa.pagination;
 
 /**
  * Functional interface for providing JPA property paths from sort enum constants.
  *
- * <p>This interface is the foundation of type-safe, enum-based sorting in this library. By implementing
- * this interface, your sort enums can map user-friendly constant names to actual JPA entity property paths,
- * including nested properties using dot notation.</p>
+ * <p>This interface is the foundation of type-safe, enum-based sorting in this library. By
+ * implementing this interface, your sort enums can map user-friendly constant names to actual JPA
+ * entity property paths, including nested properties using dot notation.
  *
  * <h2>Design Benefits</h2>
+ *
  * <ul>
- *   <li><strong>Type Safety:</strong> Compile-time checking of sort field names</li>
- *   <li><strong>IDE Support:</strong> Autocomplete and refactoring for sort fields</li>
- *   <li><strong>Flexibility:</strong> Map enum names to different property paths</li>
- *   <li><strong>Nested Properties:</strong> Support for dot notation (e.g., "address.city")</li>
- *   <li><strong>Documentation:</strong> Self-documenting sort options through enum constants</li>
+ *   <li><strong>Type Safety:</strong> Compile-time checking of sort field names
+ *   <li><strong>IDE Support:</strong> Autocomplete and refactoring for sort fields
+ *   <li><strong>Flexibility:</strong> Map enum names to different property paths
+ *   <li><strong>Nested Properties:</strong> Support for dot notation (e.g., "address.city")
+ *   <li><strong>Documentation:</strong> Self-documenting sort options through enum constants
  * </ul>
  *
  * <h2>Usage Examples</h2>
  *
  * <h3>Simple Properties</h3>
+ *
  * <pre>{@code
  * public enum PersonSort implements SortPropertyProvider {
  *     FIRST_NAME("firstName"),
@@ -39,6 +56,7 @@ package org.jwcarman.jpa.pagination;
  * }</pre>
  *
  * <h3>Nested Properties</h3>
+ *
  * <pre>{@code
  * public enum OrderSort implements SortPropertyProvider {
  *     ORDER_NUMBER("orderNumber"),
@@ -62,6 +80,7 @@ package org.jwcarman.jpa.pagination;
  * }</pre>
  *
  * <h3>Properties with Different Naming</h3>
+ *
  * <pre>{@code
  * public enum ProductSort implements SortPropertyProvider {
  *     NAME("name"),
@@ -85,6 +104,7 @@ package org.jwcarman.jpa.pagination;
  * }</pre>
  *
  * <h3>Integration with Paginator</h3>
+ *
  * <pre>{@code
  * @Service
  * public class PersonService {
@@ -108,6 +128,7 @@ package org.jwcarman.jpa.pagination;
  * }</pre>
  *
  * <h3>Using with Records (Compact Syntax)</h3>
+ *
  * <pre>{@code
  * public enum ArticleSort implements SortPropertyProvider {
  *     TITLE("title"),
@@ -128,12 +149,13 @@ package org.jwcarman.jpa.pagination;
  * }</pre>
  *
  * <h2>Best Practices</h2>
+ *
  * <ul>
- *   <li>Use UPPER_SNAKE_CASE for enum constant names (Java convention)</li>
- *   <li>Use camelCase for JPA property paths (JPA convention)</li>
- *   <li>Document any non-obvious property mappings</li>
- *   <li>Keep sort options focused on commonly needed fields</li>
- *   <li>Consider adding JavaDoc to enum constants for complex sorts</li>
+ *   <li>Use UPPER_SNAKE_CASE for enum constant names (Java convention)
+ *   <li>Use camelCase for JPA property paths (JPA convention)
+ *   <li>Document any non-obvious property mappings
+ *   <li>Keep sort options focused on commonly needed fields
+ *   <li>Consider adding JavaDoc to enum constants for complex sorts
  * </ul>
  *
  * @see PageSpec
@@ -143,21 +165,22 @@ package org.jwcarman.jpa.pagination;
 @FunctionalInterface
 public interface SortPropertyProvider {
 
-    /**
-     * Returns the JPA entity property path for sorting.
-     *
-     * <p>This method provides the actual property name or path used in JPA queries.
-     * The path can be a simple property name or a nested property using dot notation.</p>
-     *
-     * <p><strong>Examples:</strong></p>
-     * <ul>
-     *   <li>Simple property: {@code "firstName"}</li>
-     *   <li>Simple property: {@code "price"}</li>
-     *   <li>Nested property: {@code "address.city"}</li>
-     *   <li>Deeply nested: {@code "order.customer.address.zipCode"}</li>
-     * </ul>
-     *
-     * @return the JPA property path for sorting, never null
-     */
-    String getSortProperty();
+  /**
+   * Returns the JPA entity property path for sorting.
+   *
+   * <p>This method provides the actual property name or path used in JPA queries. The path can be a
+   * simple property name or a nested property using dot notation.
+   *
+   * <p><strong>Examples:</strong>
+   *
+   * <ul>
+   *   <li>Simple property: {@code "firstName"}
+   *   <li>Simple property: {@code "price"}
+   *   <li>Nested property: {@code "address.city"}
+   *   <li>Deeply nested: {@code "order.customer.address.zipCode"}
+   * </ul>
+   *
+   * @return the JPA property path for sorting, never null
+   */
+  String getSortProperty();
 }
