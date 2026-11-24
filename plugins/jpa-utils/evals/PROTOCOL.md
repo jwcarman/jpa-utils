@@ -98,3 +98,23 @@ jar to learn: what search matches, what auditing needs enabled, the `Paginator` 
 
 Secondary: turns and time by the same test; calls reading the jar per run; whether the skill was
 loaded and which reference was read; successes per arm.
+
+## Result: skill v1 against no skill
+
+| Arm | Runs | Successes | Mean turns | Mean time | Mean cost | jar reads (all runs) |
+|---|---|---|---|---|---|---|
+| no skill | 20 | 18 | 33.1 | 122 s | $0.036 | 133 |
+| skill v1 | 20 | 20 | 27.9 | 85 s | $0.023 | 48 |
+
+By case: `books-list` $0.042 → $0.023, 129 s → 77 s (10 and 10 successes); `books-audit`
+$0.031 → $0.023, 116 s → 94 s (8 and 10).
+
+**Supported.** One-sided Mann-Whitney on cost per run, both cases pooled: p = 8e-7; the skill arm
+costs 36% less. Time: 30% less, p = 9e-6; turns: 16% fewer, p = 0.045. Successes: 20 against 18
+(not significant, and not the measure). The skill was loaded in 19 of 20 skill runs; jar reads fell
+by about two thirds.
+
+Caveat on the successes: both no-skill failures are the case's timestamp example again (both runs
+truncated to whole seconds). No skill run did, but the skill's line against it ("keep the
+timestamps as `Instant` with their fractions") was written after the baseline showed it, so it
+fixes this case's artifact as much as a real mistake. The cost result does not depend on it.
